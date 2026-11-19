@@ -31,7 +31,7 @@ Aprire con **Chrome o Edge** (doppio clic sul file).
 
 - **Registro posizioni**: dashboard (posizioni attive, importo esposto, scadenze superate, entro 7 giorni, pronte per il ricorso, prossima scadenza), ricerca (anche per numero di fattura), filtri per fase e stato con conteggi coerenti, ordinamento, scadenze evidenziate in rosso/ambra.
 - **Fatture e titolo del credito**: elenco fatture (numero, data, scadenza, importo, pagato) con totale, pagato e **residuo dovuto calcolato**; riconoscimento di debito (sì/no, data, forma). È la prova scritta mostrata nella fase del ricorso. Senza fatture si può ancora indicare un importo a mano.
-- **Scheda posizione**: barra di avanzamento a 6 fasi, anagrafica debitore, promemoria, storico eventi (eliminazione con conferma), note, apertura della cartella pratica, pulsante *Registra fase e passa alla successiva* (alla fase 6 chiude la procedura).
+- **Scheda posizione**: barra di avanzamento a 6 fasi, anagrafica debitore (forma giuridica a scelta: S.r.l., S.r.l.s., S.a.s., Ditta individuale, S.p.A.), promemoria, storico eventi (eliminazione con conferma), note, apertura della cartella pratica, pulsante *Registra fase e passa alla successiva* (alla fase 6 chiude la procedura).
 - **Stati**: attiva / sospesa / chiusa-incassata / chiusa-abbandonata.
 - **Comunicazioni**: note sulle comunicazioni con la cliente CA o con la controparte; dalla scheda posizione si aprono **solo** le comunicazioni collegate a quella posizione.
 - **Stampa** del registro.
