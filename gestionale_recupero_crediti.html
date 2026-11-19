@@ -472,6 +472,14 @@ function codiceProssimo(){
   return pre+String(max+1).padStart(3,'0');
 }
 const GIORNI_MORA_DEFAULT = 10;
+const FORME_GIURIDICHE = [['',' — seleziona —'],['S.r.l.','S.r.l.'],['S.r.l.s.','S.r.l.s.'],['S.a.s.','S.a.s.'],
+  ['Ditta individuale','Ditta individuale'],['S.p.A.','S.p.A.']];
+/* riconduce le diciture libere delle versioni precedenti (es. "srl", "SRLS", "spa") alla voce dell'elenco */
+function normalizzaForma(v){
+  const k=String(v||'').toLowerCase().replace(/[^a-z]/g,'');
+  const m={srl:'S.r.l.',srls:'S.r.l.s.',sas:'S.a.s.',spa:'S.p.A.',dittaindividuale:'Ditta individuale',ditta:'Ditta individuale'};
+  return m[k] || v || '';
+}
 function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', importo:'', pagato:''}; }
 function nuovaPosizione(){
   return {
@@ -506,6 +514,7 @@ function migraPosizione(p){
   p.fatture.forEach(f=>{ if(!f.id) f.id=uid(); });
   if(!Array.isArray(p.eventi)) p.eventi=[];
   if(!Array.isArray(p.storico)) p.storico=[];
+  p.debitore.forma=normalizzaForma(p.debitore.forma);
   return p;
 }
 function termineMoraCalcolato(p){ const m=p.fasi.mora; return m.data ? addDays(m.data, +m.giorni||GIORNI_MORA_DEFAULT) : ''; }
@@ -1090,7 +1099,9 @@ function renderDetail(){
     '<div class="card"><h3>🏢 Anagrafica debitore <span class="st '+(p.debitore.nome?'done':'current')+'">'+
       (p.debitore.nome?'compilata':'da compilare')+'</span></h3><div class="grid">'+
       campo(p,'debitore.nome','Denominazione / nome (come in visura)')+
-      campo(p,'debitore.forma','Forma giuridica')+
+      menuSel(p,'debitore.forma','Forma giuridica',
+        FORME_GIURIDICHE.some(o=>o[0]===p.debitore.forma) ? FORME_GIURIDICHE
+          : FORME_GIURIDICHE.concat([[p.debitore.forma, p.debitore.forma+' (altro)']]))+
       campo(p,'debitore.sede','Sede legale')+
       campo(p,'debitore.piva','P. IVA / C.F.')+
       campo(p,'debitore.pec','PEC')+
