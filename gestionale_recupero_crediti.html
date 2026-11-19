@@ -50,7 +50,7 @@ input,select,textarea{font:inherit;color:inherit}
 .menu .hint{font-size:11px;color:var(--mut);padding:5px 11px 7px;line-height:1.35}
 
 /* ---------- kpi ---------- */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:16px 18px 4px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:16px 18px 4px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);font-weight:650}
 .kpi .val{font-size:23px;font-weight:750;margin-top:3px;line-height:1.15}
@@ -159,6 +159,27 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 .scad-item.soon .d{color:var(--amber)}
 .scad-item .g{margin-left:auto;font-size:11.5px;color:var(--mut);white-space:nowrap}
 .noscad{font-size:12.5px;color:var(--mut);font-style:italic}
+.scad-item.past{opacity:.6;border-left-color:#c3cad6;background:var(--grey-l)}
+.scad-item.past .d{text-decoration:line-through;color:var(--mut)}
+.banner-ricorso{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  background:var(--amber-l);border:1px solid #f0d9b0;border-left:4px solid var(--amber);border-radius:8px;
+  padding:10px 12px;margin-bottom:9px;font-size:13px}
+.mini{background:#fff;border:1px solid var(--indigo);color:var(--indigo);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:650;margin-left:6px}
+.mini:hover{background:var(--indigo-l)}
+/* fatture */
+.ftab-wrap{overflow-x:auto}
+.ftab{width:100%;min-width:560px;border-collapse:collapse;font-size:13px}
+.ftab th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);text-align:left;
+  padding:4px 4px 6px;border-bottom:1px solid var(--line);position:static;background:none;cursor:default}
+.ftab th.num{text-align:right}
+.ftab td{padding:4px}
+.ftab input{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 7px;background:#fbfcfe}
+.ftab input.num{text-align:right}
+.ftab .x{background:none;border:0;color:#b3bccb;font-size:15px}
+.ftab .x:hover{color:var(--red)}
+.tot-f{font-size:13px;color:var(--mut)}.tot-f b{color:var(--txt)}.tot-f b.res{color:var(--navy);font-size:14px}
+.b-filtro{background:var(--navy);color:#fff;border:0;border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:650}
+.b-filtro:hover{background:var(--navy2)}
 /* timeline */
 .tl{display:flex;flex-direction:column;gap:0}
 .tl-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
@@ -222,7 +243,7 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);
   color:#fff;border-radius:8px;padding:10px 16px;font-size:13.5px;z-index:99;box-shadow:var(--shadow)}
 
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:1300px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:720px){
   .kpis{grid-template-columns:repeat(2,1fr);padding:12px}
   .brand h1{font-size:15px}.brand .sub{white-space:normal}
@@ -294,6 +315,7 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
   <section class="toolbar">
     <div class="search"><input id="searchCom" type="search" placeholder="Cerca nelle comunicazioni: oggetto, testo, soggetto, codice…"></div>
     <div class="chips" id="comChips"></div>
+    <span id="comPosFiltro"></span>
     <button class="btn-add" data-act="nuovaCom">＋ Nuova comunicazione</button>
   </section>
   <div class="comwrap">
@@ -381,6 +403,47 @@ function giorniDa(isoStr){ if(!isoStr) return null; const p=isoStr.split('-').ma
   if(p.length!==3||!p[0]) return null; const t=new Date(); t.setHours(0,0,0,0);
   return Math.round((new Date(p[0],p[1]-1,p[2]) - t)/86400000); }
 function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function parseISO(s){ if(!s) return null; const p=String(s).split('-').map(Number);
+  if(p.length!==3||!p[0]||!p[1]||!p[2]) return null; return new Date(p[0],p[1]-1,p[2]); }
+function num(v){ const n=+v; return isFinite(n)?n:0; }
+
+/* ---------------- calendario: festività e computo dei termini ---------------- */
+function pasqua(y){ // algoritmo di Meeus/Jones/Butcher (calendario gregoriano)
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
+        g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+        l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+        mese=Math.floor((h+l-7*m+114)/31),giorno=((h+l-7*m+114)%31)+1;
+  return new Date(y,mese-1,giorno);
+}
+// festività nazionali (L. 260/1949 e succ.); il santo patrono locale NON proroga i termini
+const FESTE_FISSE=['01-01','01-06','04-25','05-01','06-02','08-15','11-01','12-08','12-25','12-26'];
+function festivo(d){
+  if(d.getDay()===0) return true;
+  const md=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(FESTE_FISSE.indexOf(md)>=0) return true;
+  const lun=pasqua(d.getFullYear()); lun.setDate(lun.getDate()+1); // lunedì dell'Angelo
+  return iso(d)===iso(lun);
+}
+/* Computo di un termine a giorni (art. 155 c.p.c.: si esclude il giorno iniziale).
+   opt.feriale -> sospensione feriale 1-31 agosto (L. 742/1969)
+   opt.slitta  -> se scade di sabato o in giorno festivo è prorogato al primo giorno non festivo (art. 155 c. 4-5)
+   Restituisce {data, note[]} oppure null. */
+function computaTermine(isoStr, giorni, opt){
+  opt=opt||{}; const d=parseISO(isoStr); if(!d||!(giorni>0)) return null;
+  const note=[]; let cont=0, saltati=0;
+  while(cont<giorni){
+    d.setDate(d.getDate()+1);
+    if(opt.feriale && d.getMonth()===7){ saltati++; continue; }
+    cont++;
+  }
+  if(saltati) note.push('incl. sospensione feriale');
+  if(opt.slitta){
+    const orig=iso(d);
+    while(festivo(d) || d.getDay()===6) d.setDate(d.getDate()+1);
+    if(iso(d)!==orig) note.push('prorogato dal '+fmtData(orig)+' (sabato/festivo, art. 155 c.p.c.)');
+  }
+  return {data:iso(d), note};
+}
 function getPath(o,p){ return p.split('.').reduce((c,k)=>c==null?undefined:c[k],o); }
 function setPath(o,p,v){ const ks=p.split('.'); let c=o;
   for(let i=0;i<ks.length-1;i++){ if(c[ks[i]]==null) c[ks[i]]={}; c=c[ks[i]]; }
@@ -394,25 +457,32 @@ let pendingPerm = false;  // cartella collegata ma permesso da riconfermare
 let openId = null;
 let filtri = {q:'', fase:0, stato:'tutte', ord:'scadenza', dir:1};
 let view = 'registro';
-let filtriCom = {q:'', tipo:'tutte'};
+let filtriCom = {q:'', tipo:'tutte', pos:''};
 let comEditing = null;
 let saveTimer=null, fileTimer=null;
 
 /* ---------------- record ---------------- */
 function codiceProssimo(){
-  const y = new Date().getFullYear();
-  const n = db ? db.posizioni.filter(p=>p.codice && p.codice.indexOf('CA-'+y+'-')===0).length+1 : 1;
-  return 'CA-'+y+'-'+String(n).padStart(3,'0');
+  // numero più alto già usato nell'anno + 1 (non il conteggio: dopo un'eliminazione il conteggio produrrebbe duplicati)
+  const y = new Date().getFullYear(), pre='CA-'+y+'-';
+  let max=0;
+  (db?db.posizioni:[]).forEach(p=>{
+    if(p.codice && p.codice.indexOf(pre)===0){ const n=parseInt(p.codice.slice(pre.length),10); if(n>max) max=n; }
+  });
+  return pre+String(max+1).padStart(3,'0');
 }
+const GIORNI_MORA_DEFAULT = 10;
+function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', importo:'', pagato:''}; }
 function nuovaPosizione(){
   return {
     id: uid(), codice: codiceProssimo(), cliente:'CA',
     debitore:{nome:'', forma:'', sede:'', piva:'', pec:''},
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
+    fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
-      mora:{data:'', termine_data:'', esito:''},
+      mora:{data:'', giorni:GIORNI_MORA_DEFAULT, termine_data:'', termine_manuale:false, esito:''},
       ricorso:{data:'', rg:'', autorita:'Tribunale di Como'},
-      decreto:{data:'', numero:'', imm_esecutivo:false},
+      decreto:{data:'', numero:'', imm_esecutivo:false, termine_opposizione:40, notifica_estero:false},
       notifica:{data:'', esito:'', opposizione:'', data_opposizione:''},
       precetto:{data:'', esito:''},
       esecuzione:{data:'', tipo:'', nota:''}
@@ -421,13 +491,46 @@ function nuovaPosizione(){
     note:'', cartella:'', eventi:[], storico:[]
   };
 }
+/* completa le posizioni salvate con versioni precedenti del gestionale */
+function migraPosizione(p){
+  const base=nuovaPosizione();
+  ['debitore','fasi','promemoria','riconoscimento'].forEach(k=>{ if(!p[k]||typeof p[k]!=='object') p[k]=base[k]; });
+  const m0=p.fasi.mora||{};
+  if(m0.termine_manuale===undefined){ // termine inserito a mano nelle versioni precedenti: va preservato
+    m0.termine_manuale = !!(m0.termine_data && (!m0.data || m0.termine_data!==addDays(m0.data, +m0.giorni||GIORNI_MORA_DEFAULT)));
+    p.fasi.mora=m0;
+  }
+  Object.keys(base.fasi).forEach(k=>{ p.fasi[k]=Object.assign({}, base.fasi[k], p.fasi[k]||{}); });
+  p.riconoscimento=Object.assign({}, base.riconoscimento, p.riconoscimento);
+  if(!Array.isArray(p.fatture)) p.fatture=[];
+  p.fatture.forEach(f=>{ if(!f.id) f.id=uid(); });
+  if(!Array.isArray(p.eventi)) p.eventi=[];
+  if(!Array.isArray(p.storico)) p.storico=[];
+  return p;
+}
+function termineMoraCalcolato(p){ const m=p.fasi.mora; return m.data ? addDays(m.data, +m.giorni||GIORNI_MORA_DEFAULT) : ''; }
+/* totali del credito: se ci sono fatture l'importo dovuto è il residuo calcolato, altrimenti l'importo inserito a mano */
+function totali(p){
+  const ff=(p&&p.fatture)||[];
+  if(ff.length){
+    const tot=ff.reduce((s,f)=>s+num(f.importo),0), pag=ff.reduce((s,f)=>s+num(f.pagato),0);
+    return {daFatture:true, n:ff.length, totale:tot, pagato:pag, residuo:Math.round((tot-pag)*100)/100};
+  }
+  const imp=num(p&&p.importo);
+  return {daFatture:false, n:0, totale:imp, pagato:0, residuo:imp};
+}
+function dovuto(p){ return totali(p).residuo; }
 function esempioPosizione(){
   const p = nuovaPosizione();
   p.codice='CA-ES000';
   p.debitore={nome:'ESEMPIO S.r.l. — posizione dimostrativa', forma:'S.r.l.', sede:'Como (CO)',
     piva:'IT00000000000', pec:'esempio@pec.example.it'};
-  p.importo=3997.34; p.apertura='2026-11-02'; p.fase=1;
-  p.fasi.mora={data:'2026-11-05', termine_data:'2026-11-20', esito:''};
+  p.importo=''; p.apertura='2026-11-02'; p.fase=1;
+  p.fatture=[
+    {id:uid(), numero:'FT 2026/1012', data:'2026-06-30', scadenza:'2026-07-30', importo:2450.00, pagato:0},
+    {id:uid(), numero:'FT 2026/1544', data:'2026-08-31', scadenza:'2026-09-30', importo:1547.34, pagato:0}
+  ];
+  p.fasi.mora={data:'2026-11-05', giorni:15, termine_data:'2026-11-20', termine_manuale:false, esito:''};
   p.fasi.ricorso={data:'', rg:'', autorita:'Tribunale di Como'};
   p.promemoria={data:'', testo:''};
   p.note='Posizione di esempio: mostra il funzionamento del gestionale. Usala come riferimento e poi eliminala (menù Dati → Elimina la posizione esempio).';
@@ -438,30 +541,71 @@ function esempioPosizione(){
 function getPos(id){ return db ? db.posizioni.find(p=>p.id===id) : null; }
 
 /* ---------------- scadenze automatiche ---------------- */
+/* Ogni scadenza: {data, testo, attiva, dilatorio}
+   - attiva=false  -> adempimento già compiuto / non più rilevante: mostrata in grigio, esclusa da KPI e ordinamento
+   - dilatorio     -> termine "da attendere" (es. art. 482): non è mai un ritardo, sparisce quando è decorso */
+function notificaPerfezionata(f){ return !!(f.notifica && f.notifica.data && !/^Negativa/.test(f.notifica.esito||'')); }
+function moraScadutaSenzaEsito(p){
+  const m=p.fasi&&p.fasi.mora; if(!m||!m.termine_data||p.fase!==1||p.stato!=='attiva') return false;
+  const g=giorniDa(m.termine_data);
+  return g!==null && g<0 && (m.esito===''||m.esito==='silenzio');
+}
 function scadenze(p){
   if(!p || p.stato!=='attiva') return [];
   const out=[]; const f=p.fasi||{};
-  const push=(d,t)=>{ if(d) out.push({data:d, testo:t}); };
-  push(f.mora && f.mora.termine_data, 'Termine di adempimento della messa in mora');
-  if(f.notifica && f.notifica.data && f.notifica.opposizione!=='proposta'){
-    const gg = (f.decreto && f.decreto.imm_esecutivo) ? 40 : 30;
-    push(addDays(f.notifica.data, gg),
-      'Termine di opposizione al decreto — '+gg+' gg '+(gg===40?'(decreto immediatamente esecutivo)':'')+' (art. 640 c.p.c.)');
+  const push=(d,t,attiva,extra)=>{ if(d) out.push(Object.assign({data:d, testo:t, attiva:!!attiva}, extra||{})); };
+  const conNote=(t,r)=> t+(r&&r.note.length?' ['+r.note.join('; ')+']':'');
+
+  // Fase 1 — messa in mora (termine sostanziale assegnato al debitore)
+  if(f.mora && f.mora.termine_data){
+    const att = p.fase===1 && f.mora.esito!=='pagamento';
+    const t = moraScadutaSenzaEsito(p)
+      ? 'Termine della messa in mora decorso senza adempimento → predisporre il ricorso per ingiunzione'
+      : 'Termine di adempimento della messa in mora';
+    push(f.mora.termine_data, t, att);
   }
+  // Fase 3 → 4 — notifica del decreto entro 60 gg (90 se all'estero) dalla pronuncia, a pena di inefficacia (art. 644)
+  if(f.decreto && f.decreto.data){
+    const gg = f.decreto.notifica_estero ? 90 : 60;
+    const r = computaTermine(f.decreto.data, gg, {feriale:true, slitta:true});
+    if(r) push(r.data, conNote('Notificare il decreto entro '+gg+' gg dalla pronuncia, a pena di inefficacia (art. 644 c.p.c.)', r),
+               !notificaPerfezionata(f));
+  }
+  // Fase 4 — termine per l'opposizione (art. 641): 40 gg salvo diverso termine fissato nel decreto
+  if(notificaPerfezionata(f)){
+    const gg = +(f.decreto && f.decreto.termine_opposizione) || 40;
+    const r = computaTermine(f.notifica.data, gg, {feriale:true, slitta:true});
+    if(r){
+      const att = f.notifica.opposizione!=='proposta' && p.fase<=4;
+      const t = 'Termine per l\'opposizione: '+gg+' gg dalla notifica (art. 641 c.p.c.); se decorre senza opposizione chiedere la dichiarazione di esecutorietà (art. 647)'+
+        (f.decreto && f.decreto.imm_esecutivo ? ' — decreto provvisoriamente esecutivo: il precetto può essere notificato senza attendere il termine' : '');
+      push(r.data, conNote(t, r), att);
+    }
+  }
+  // Fase 5 — precetto
   if(f.precetto && f.precetto.data){
-    push(addDays(f.precetto.data,10), 'Termine minimo di 10 gg per il pagamento: da questa data è possibile il pignoramento (art. 480 c.3 c.p.c.)');
-    push(addDays(f.precetto.data,90), 'Scadenza del precetto: il pignoramento deve essere eseguito entro 90 gg dalla notifica (artt. 481 e 497 c.p.c.)');
+    const dil = addDays(f.precetto.data,10); // termine dilatorio, non processuale: niente sospensione feriale (Cass. 2742/2015)
+    const g = giorniDa(dil);
+    push(dil, 'Fine del termine dilatorio di 10 gg (artt. 480 e 482 c.p.c.): il pignoramento è possibile dal giorno successivo',
+         !(f.esecuzione && f.esecuzione.data) && g!==null && g>=0, {dilatorio:true});
+    const r = computaTermine(f.precetto.data, 90, {feriale:false, slitta:true});
+    if(r) push(r.data, conNote('Efficacia del precetto: il pignoramento va eseguito entro 90 gg dalla notifica (art. 481 c.p.c.)', r),
+               !(f.esecuzione && f.esecuzione.data));
   }
-  if(p.promemoria && p.promemoria.data) push(p.promemoria.data, p.promemoria.testo || 'Promemoria');
+  if(p.promemoria && p.promemoria.data) push(p.promemoria.data, p.promemoria.testo || 'Promemoria', true);
   return out.sort((a,b)=> a.data < b.data ? -1 : (a.data > b.data ? 1 : 0));
 }
-function prossimaScadenza(p){ return scadenze(p)[0] || null; }
+function scadenzeAttive(p){ return scadenze(p).filter(s=>s.attiva); }
+function prossimaScadenza(p){ return scadenzeAttive(p)[0] || null; }
 
 /* ---------------- persistenza ---------------- */
 function normalizza(d){
   if(!d || !Array.isArray(d.posizioni)) return null;
   if(!Array.isArray(d.comunicazioni)) d.comunicazioni=[];
   d.comunicazioni.forEach(c=>{ if(!c.id) c.id=uid(); });
+  d.posizioni.forEach(migraPosizione);
+  if(!d.aggiornato) d.aggiornato=0;
+  d.versione=2;
   return d;
 }
 function loadLocal(){
@@ -476,17 +620,32 @@ function aggiornaStatus(msg, kind){
   if(msg){ txt=msg; cls=kind||'warn'; }
   el.className='save-status '+cls; el.textContent=txt;
 }
+/* salva nel browser senza cambiare il timestamp (usato quando si adotta la versione del file) */
+function salvaLocale(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); return true; }
+  catch(e){ aggiornaStatus('⚠ Salvataggio locale fallito: '+e.message,'err'); return false; }
+}
 function save(){
   if(!db) return;
   db.aggiornato=Date.now();
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
-  catch(e){ aggiornaStatus('⚠ Salvataggio locale fallito: '+e.message,'err'); return; }
+  if(!salvaLocale()) return;
   aggiornaStatus();
   if(dirHandle && !pendingPerm){
     clearTimeout(fileTimer);
     fileTimer=setTimeout(()=>scriviFile(true), 700);
   }
 }
+/* --- sincronizzazione browser ⇄ file ---
+   fileBase = timestamp della versione del file che questo browser ha letto o scritto per ultimo.
+   - file cambiato da altri  && dati locali invariati  -> si adotta il file
+   - file invariato          && dati locali modificati -> si scrive il file
+   - entrambi modificati                                -> CONFLITTO: si chiede all'utente, la versione scartata
+                                                           viene salvata come copia nella cartella               */
+const BASE_KEY = STORAGE_KEY+'_filebase';
+let fileBase = (()=>{ try{ const v=+localStorage.getItem(BASE_KEY); return v||null; }catch(e){ return null; } })();
+let conflittoAperto = false;
+function setFileBase(ts){ fileBase=ts||null; try{ localStorage.setItem(BASE_KEY, String(ts||'')); }catch(e){} }
+
 /* --- IndexedDB: conserva il handle della cartella --- */
 function idb(){
   return new Promise((res,rej)=>{
@@ -502,19 +661,30 @@ async function idbGet(k){ const d=await idb();
   return new Promise((res,rej)=>{ const t=d.transaction('handles','readonly');
     const q=t.objectStore('handles').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
 
-async function scriviFile(silent){
-  if(!dirHandle) return false;
+async function scriviJson(nome, dati){
+  const fh=await dirHandle.getFileHandle(nome,{create:true});
+  const w=await fh.createWritable();
+  await w.write(JSON.stringify(dati,null,2));
+  await w.close();
+}
+async function scriviFileDiretto(silent){
   try{
-    const fh=await dirHandle.getFileHandle(FILE_NAME,{create:true});
-    const w=await fh.createWritable();
-    await w.write(JSON.stringify(db,null,2));
-    await w.close();
+    await scriviJson(FILE_NAME, db);
+    setFileBase(db.aggiornato);
     fileOk=true; aggiornaStatus(); return true;
   }catch(err){
     fileOk=false; aggiornaStatus('⚠ File non scritto: '+err.message,'err');
     if(!silent) alert('Salvataggio su file non riuscito:\n'+err.message);
     return false;
   }
+}
+async function scriviFile(silent){
+  if(!dirHandle || conflittoAperto) return false;
+  const f=await leggiFile();
+  if(f && f.aggiornato!==db.aggiornato && (fileBase===null || f.aggiornato!==fileBase)){
+    await gestisciConflitto(f); return false;
+  }
+  return scriviFileDiretto(silent);
 }
 async function leggiFile(){
   if(!dirHandle) return null;
@@ -523,6 +693,45 @@ async function leggiFile(){
     const f=await fh.getFile();
     return normalizza(JSON.parse(await f.text()));
   }catch(e){ return null; }
+}
+function descrVersione(x){
+  return (x.aggiornato?new Date(x.aggiornato).toLocaleString('it-IT'):'data sconosciuta')+
+    ' · '+x.posizioni.length+' posizioni, '+(x.comunicazioni||[]).length+' comunicazioni';
+}
+function adottaFile(f){
+  db=f; salvaLocale(); setFileBase(f.aggiornato);
+  if(openId && !getPos(openId)) closePanel();
+  renderAll(); resetComForm();
+}
+async function gestisciConflitto(f){
+  if(conflittoAperto) return; conflittoAperto=true;
+  try{
+    const usaFile = confirm('⚠ ATTENZIONE — il file '+FILE_NAME+' è stato modificato da un altro computer o browser, '+
+      'e anche questo browser ha modifiche non ancora salvate nel file.\n\n'+
+      'FILE:               '+descrVersione(f)+'\nQUESTO BROWSER: '+descrVersione(db)+'\n\n'+
+      'OK = usa la versione del FILE\nAnnulla = usa la versione di QUESTO BROWSER (sovrascrive il file)\n\n'+
+      'In entrambi i casi la versione scartata viene salvata come copia nella cartella.');
+    const scartata = usaFile ? db : f;
+    const nomeCopia = 'gestionale_ca_conflitto_'+new Date().toISOString().replace(/[-:]/g,'').replace('T','_').slice(0,15)+
+      (usaFile?'_browser':'_file')+'.json';
+    try{ await scriviJson(nomeCopia, scartata); }
+    catch(e){ alert('Impossibile salvare la copia della versione scartata ('+e.message+').\nOperazione annullata: esporta un backup JSON e riprova.'); return; }
+    if(usaFile){ adottaFile(f); toast('Caricata la versione del file · copia salvata: '+nomeCopia); }
+    else { await scriviFileDiretto(false); toast('File sovrascritto · copia salvata: '+nomeCopia); }
+  }finally{ conflittoAperto=false; }
+}
+/* allinea browser e file secondo le regole sopra (usata all'avvio, al collegamento e al ritorno sulla scheda) */
+async function sincronizza(){
+  if(!dirHandle || pendingPerm || conflittoAperto) return;
+  const f=await leggiFile();
+  if(!f){ if(db) await scriviFileDiretto(true); return; }
+  if(!db){ adottaFile(f); return; }
+  if(f.aggiornato===db.aggiornato){ setFileBase(f.aggiornato); fileOk=true; aggiornaStatus(); return; }
+  const fileCambiato   = fileBase===null || f.aggiornato!==fileBase;
+  const localeCambiato = fileBase===null || db.aggiornato!==fileBase;
+  if(fileCambiato && !localeCambiato){ adottaFile(f); fileOk=true; aggiornaStatus(); toast('Registro aggiornato dal file (modifiche da un altro computer)'); }
+  else if(!fileCambiato && localeCambiato){ await scriviFileDiretto(true); }
+  else await gestisciConflitto(f);
 }
 async function permesso(mode){
   if(!dirHandle || !dirHandle.queryPermission) return 'granted';
@@ -539,12 +748,10 @@ async function collegaCartella(){
   }
   try{
     const h=await window.showDirectoryPicker({mode:'readwrite', id:'gestionale-ca'});
-    dirHandle=h; pendingPerm=false;
+    dirHandle=h; pendingPerm=false; setFileBase(null); // nuova cartella: nessuna versione già vista
     try{ await idbSet('dir',h); }catch(e){}
-    const f=await leggiFile();
-    if(f){ if(!db || f.aggiornato>=db.aggiornato){ db=f; renderAll(); } await scriviFile(true); }
-    else { await scriviFile(false); }
-    fileOk=true; aggiornaStatus('✓ Cartella collegata: '+FILE_NAME,'ok');
+    await sincronizza();
+    if(fileOk) aggiornaStatus('✓ Cartella collegata: '+FILE_NAME,'ok');
     toast('Cartella collegata: i dati verranno salvati anche in '+FILE_NAME);
   }catch(err){ if(err && err.name!=='AbortError') alert('Impossibile collegare la cartella:\n'+err.message); }
 }
@@ -556,7 +763,8 @@ async function ricaricaDaFile(){
   pendingPerm=false;
   const f=await leggiFile();
   if(!f){ alert('Nessun file '+FILE_NAME+' nella cartella collegata.'); return; }
-  db=f; renderAll(); save(); toast('Registro ricaricato dal file');
+  if(db && db.aggiornato!==fileBase && db.aggiornato!==f.aggiornato){ await gestisciConflitto(f); return; }
+  adottaFile(f); fileOk=true; aggiornaStatus(); toast('Registro ricaricato dal file');
 }
 function esportaJson(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
@@ -575,45 +783,54 @@ function importaJson(){ $('#importFile').click(); }
   try{ dirHandle=await idbGet('dir'); }catch(e){ dirHandle=null; }
   if(dirHandle){
     const perm=await permesso();
-    if(perm==='granted'){
-      const f=await leggiFile();
-      if(f && (!db || f.aggiornato>db.aggiornato)) db=f;
-      if(db){ await scriviFile(true); }
-    }else{ pendingPerm=true; }
+    if(perm==='granted'){ await sincronizza(); }
+    else{ pendingPerm=true; }
   }
-  if(!db){ db={versione:1, aggiornato:Date.now(), posizioni:[esempioPosizione()], comunicazioni:[]}; save(); }
+  if(!db){ db={versione:2, aggiornato:Date.now(), posizioni:[esempioPosizione()], comunicazioni:[]}; save(); }
   renderAll();
   resetComForm();
   if(pendingPerm) aggiornaStatus('📁 Cartella collegata — conferma il permesso con «Ricarica dal file»','warn');
   else aggiornaStatus();
 })();
+window.addEventListener('storage', e=>{
+  if(e.key===BASE_KEY){ fileBase=+e.newValue||null; return; }
+  if(e.key!==STORAGE_KEY || !e.newValue) return;
+  try{ const d=normalizza(JSON.parse(e.newValue)); if(!d) return;
+    db=d; if(openId && !getPos(openId)) closePanel(); renderAll(); }catch(err){}
+});
+/* tornando sulla finestra si controlla se un altro computer ha modificato il file */
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') sincronizza(); });
 
 /* ---------------- rendering: KPI ---------------- */
 function renderKpis(){
   const pos=db.posizioni;
   const attive=pos.filter(p=>p.stato==='attiva');
-  const totAtt=attive.reduce((s,p)=>s+(+p.importo||0),0);
-  const incassato=pos.filter(p=>p.stato==='incassata').reduce((s,p)=>s+(+p.importo||0),0);
+  const totAtt=attive.reduce((s,p)=>s+dovuto(p),0);
+  // incassato = pagamenti registrati sulle fatture; per le posizioni senza fatture chiuse come incassate si usa l'importo
+  const incassato=pos.reduce((s,p)=>{ const t=totali(p);
+    return s + (t.daFatture ? t.pagato : (p.stato==='incassata' ? t.totale : 0)); },0);
   let scadute=0, entro7=0, prossima=null;
   attive.forEach(p=>{
-    const l=scadenze(p); let hasLate=false, hasSoon=false;
+    const l=scadenzeAttive(p); let hasLate=false, hasSoon=false;
     l.forEach(s=>{
       const g=giorniDa(s.data);
       if(g===null) return;
-      if(g<0) hasLate=true;
-      else if(g<=7) hasSoon=true;
+      if(g<0 && !s.dilatorio) hasLate=true;
+      else if(g>=0 && g<=7) hasSoon=true;
       if(g>=0 && (!prossima || s.data<prossima.s.data)) prossima={p,s};
     });
     if(hasLate) scadute++;
     if(hasSoon) entro7++;
   });
+  const daRicorso=attive.filter(moraScadutaSenzaEsito).length;
   $('#kpis').innerHTML = [
     kpi('Posizioni attive', attive.length, 'di '+pos.length+' totali', ''),
     kpi('Importo esposto', fmtEuro(totAtt), 'incassato: '+fmtEuro(incassato), ''),
     kpi('Scadenze superate', scadute, scadute?'controllare subito':'nessun ritardo', scadute?'alert':''),
     kpi('Scadenze entro 7 gg', entro7, entro7?'in scadenza':'nessuna', entro7?'warnk':''),
+    kpi('Pronte per il ricorso', daRicorso, daRicorso?'mora scaduta senza adempimento':'nessuna', daRicorso?'warnk':''),
     kpi('Prossima scadenza', prossima?fmtData(prossima.s.data):'—',
-        prossima?prossima.p.debitore.nome.split('—')[0].trim()+' · '+prossima.s.testo:'nessuna scadenza registrata','')
+        prossima?(prossima.p.debitore.nome||prossima.p.codice).split('—')[0].trim()+' · '+prossima.s.testo:'nessuna scadenza registrata','')
   ].join('');
 }
 function kpi(lab,val,sub,cls){
@@ -621,11 +838,16 @@ function kpi(lab,val,sub,cls){
 }
 
 /* ---------------- rendering: chips fasi ---------------- */
+function posizioniPerStato(){
+  return filtri.stato==='tutte' ? db.posizioni : db.posizioni.filter(p=>p.stato===filtri.stato);
+}
 function renderChips(){
+  // i conteggi seguono lo stesso filtro di stato applicato alla tabella
+  const base=posizioniPerStato();
   const counts={}; FASI.forEach(f=>counts[f.n]=0);
-  db.posizioni.filter(p=>p.stato==='attiva').forEach(p=>{ if(counts[p.fase]!=null) counts[p.fase]++; });
+  base.forEach(p=>{ if(counts[p.fase]!=null) counts[p.fase]++; });
   let h='<button class="chip '+(filtri.fase===0?'active':'')+'" data-act="fase" data-f="0">Tutte<span class="n">'+
-        db.posizioni.length+'</span></button>';
+        base.length+'</span></button>';
   FASI.forEach(f=>{
     h+='<button class="chip '+(filtri.fase===f.n?'active':'')+'" data-act="fase" data-f="'+f.n+'">'+
        f.n+'. '+esc(f.titolo)+'<span class="n">'+counts[f.n]+'</span></button>';
@@ -635,21 +857,21 @@ function renderChips(){
 
 /* ---------------- rendering: tabella ---------------- */
 function posizioniVista(){
-  let list=db.posizioni.slice();
+  let list=posizioniPerStato().slice();
   if(filtri.fase) list=list.filter(p=>p.fase===filtri.fase);
-  if(filtri.stato!=='tutte') list=list.filter(p=>p.stato===filtri.stato);
   const q=filtri.q.trim().toLowerCase();
   if(q) list=list.filter(p=>{
     const f=p.fasi||{};
-    return [p.codice,p.debitore.nome,p.debitore.sede,p.note,p.promemoria&&p.promemoria.testo,
+    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.note,p.promemoria&&p.promemoria.testo,
             f.ricorso&&f.ricorso.rg,f.decreto&&f.decreto.numero,f.esecuzione&&f.esecuzione.nota]
+           .concat((p.fatture||[]).map(x=>x.numero))
            .filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;
   });
   const k=filtri.ord, dir=filtri.dir;
   const chiave=p=>{
     if(k==='codice') return p.codice||'';
     if(k==='debitore') return (p.debitore.nome||'').toLowerCase();
-    if(k==='importo') return +p.importo||0;
+    if(k==='importo') return dovuto(p);
     if(k==='fase') return p.fase;
     if(k==='stato') return p.stato;
     const s=prossimaScadenza(p); return s?s.data:'9999-99-99';
@@ -689,7 +911,7 @@ function renderTable(){
     rows+='<tr data-act="apri" data-id="'+p.id+'">'+
       '<td><div class="bold">'+esc(p.codice)+'</div><div class="sub">'+fmtData(p.apertura)+'</div></td>'+
       '<td><div class="bold">'+esc(p.debitore.nome||'—')+'</div><div class="sub">'+esc([p.debitore.forma,p.debitore.sede].filter(Boolean).join(' · '))+'</div></td>'+
-      '<td class="num bold">'+fmtEuro(p.importo)+'</td>'+
+      '<td class="num bold">'+fmtEuro(dovuto(p))+(totali(p).daFatture?'<div class="sub">'+totali(p).n+' fatt.</div>':'')+'</td>'+
       '<td><span class="badge-fase '+(p.stato!=='attiva'?'done':'')+'">F'+F.n+' · '+esc(F.titolo)+'</span></td>'+
       '<td>'+fmtData(dataFase)+'</td>'+
       '<td>'+scadHtml+'</td>'+
@@ -717,30 +939,50 @@ function menuSel(p,path,label,opts){
   opts.forEach(o=>{ h+='<option value="'+esc(o[0])+'"'+(v===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'; });
   return h+'</select></label>';
 }
+function faseCompletata(p){ return p.fase===6 && p.storico.some(s=>s.fase===6); }
+function statoFase(p,n){
+  if(p.fase>n || (n===6 && faseCompletata(p))) return 'done';
+  if(p.stato!=='attiva') return 'future';
+  return p.fase===n ? 'current' : 'future';
+}
+function titoloRicorsoHtml(p){
+  const t=totali(p), r=p.riconoscimento||{};
+  const parti=[];
+  if(t.daFatture) parti.push(t.n+' fattur'+(t.n===1?'a':'e')+' per un residuo di '+fmtEuro(t.residuo));
+  if(r.presente) parti.push('riconoscimento di debito'+(r.data?' del '+fmtData(r.data):''));
+  return parti.length
+    ? '📎 Prova scritta (art. 634 c.p.c.): '+esc(parti.join(' + '))
+    : '⚠ Nessuna fattura né riconoscimento di debito registrati: compilare la scheda «Fatture e titolo del credito».';
+}
 function bloccoFase(p,i){
   const F=FASI[i], f=p.fasi[F.key];
-  const stato = p.stato!=='attiva' ? (p.fase>F.n?'done':'future')
-              : (p.fase>F.n?'done':(p.fase===F.n?'current':'future'));
+  const stato = statoFase(p,F.n);
   const etich={done:'✓ completata',current:'◄ in corso',future:'da fare'}[stato];
   let h='<div class="card'+(stato==='future'?' dim':'')+'" id="fase-'+F.key+'">'+
     '<h3><span class="n">'+F.n+'</span>'+esc(F.titolo)+'<span class="st '+stato+'">'+etich+'</span></h3>'+
-    '<div class="desc">'+esc(F.desc)+'</div><div class="grid">';
+    '<div class="desc">'+esc(F.desc)+'</div>';
+  if(F.key==='ricorso') h+='<div class="desc" id="titoloRicorso">'+titoloRicorsoHtml(p)+'</div>';
+  h+='<div class="grid">';
   if(F.key==='mora'){
     h+=campo(p,'fasi.mora.data','Data invio','date')+
+       campo(p,'fasi.mora.giorni','Giorni per adempiere','number','step="1" min="1"')+
        campo(p,'fasi.mora.termine_data','Termine di adempimento','date')+
        menuSel(p,'fasi.mora.esito','Esito (riscontro / silenzio)',ESITO_MORA);
+    h+='</div><div class="desc" id="moraInfo" style="margin:8px 0 0">'+moraInfoHtml(p)+'</div><div>';
   }else if(F.key==='ricorso'){
     h+=campo(p,'fasi.ricorso.data','Data deposito','date')+
        campo(p,'fasi.ricorso.rg','Numero RG')+
        campo(p,'fasi.ricorso.autorita','Autorità competente');
   }else if(F.key==='decreto'){
-    h+=campo(p,'fasi.decreto.data','Data emissione','date')+
+    h+=campo(p,'fasi.decreto.data','Data pronuncia / deposito','date')+
        campo(p,'fasi.decreto.numero','Numero decreto')+
-       campo(p,'fasi.decreto.imm_esecutivo','Decreto immediatamente esecutivo (art. 642 c.2 c.p.c.)','check');
+       campo(p,'fasi.decreto.termine_opposizione','Termine per l\'opposizione indicato nel decreto (gg)','number','step="1" min="1"')+
+       campo(p,'fasi.decreto.imm_esecutivo','Decreto provvisoriamente esecutivo (art. 642 c.p.c.)','check')+
+       campo(p,'fasi.decreto.notifica_estero','Notifica da eseguire all\'estero (90 gg, art. 644)','check');
   }else if(F.key==='notifica'){
-    h+=campo(p,'fasi.notifica.data','Data notifica','date')+
+    h+=campo(p,'fasi.notifica.data','Data notifica (perfezionamento per il debitore)','date')+
        menuSel(p,'fasi.notifica.esito','Esito notifica',ESITO_NOTIFICA)+
-       menuSel(p,'fasi.notifica.opposizione','Opposizione (art. 640 c.p.c.)',OPPOSIZIONE)+
+       menuSel(p,'fasi.notifica.opposizione','Opposizione (artt. 641 e 645 c.p.c.)',OPPOSIZIONE)+
        campo(p,'fasi.notifica.data_opposizione','Data opposizione','date');
   }else if(F.key==='precetto'){
     h+=campo(p,'fasi.precetto.data','Data notifica','date')+
@@ -752,14 +994,51 @@ function bloccoFase(p,i){
   }
   return h+'</div></div>';
 }
+function moraInfoHtml(p){
+  const m=p.fasi.mora, calc=termineMoraCalcolato(p);
+  if(!m.data) return 'Inserendo la data di invio il termine viene calcolato automaticamente (data invio + giorni per adempiere).';
+  if(m.termine_manuale && m.termine_data!==calc)
+    return '✎ Termine inserito manualmente (calcolato: '+fmtData(calc)+') <button class="mini" data-act="ricalcolaMora">↺ ricalcola</button>';
+  return '⚙ Termine calcolato automaticamente: invio + '+(+m.giorni||GIORNI_MORA_DEFAULT)+' gg.';
+}
+function htmlFatture(p){
+  const ff=p.fatture||[];
+  let rows=ff.map((f,i)=>
+    '<tr>'+
+      '<td><input type="text" data-path="fatture.'+i+'.numero" value="'+esc(f.numero)+'" placeholder="n. fattura"></td>'+
+      '<td><input type="date" data-path="fatture.'+i+'.data" value="'+esc(f.data)+'"></td>'+
+      '<td><input type="date" data-path="fatture.'+i+'.scadenza" value="'+esc(f.scadenza)+'"></td>'+
+      '<td><input type="number" step="0.01" min="0" class="num" data-path="fatture.'+i+'.importo" value="'+esc(f.importo)+'"></td>'+
+      '<td><input type="number" step="0.01" min="0" class="num" data-path="fatture.'+i+'.pagato" value="'+esc(f.pagato)+'"></td>'+
+      '<td><button class="x" data-act="delFattura" data-id="'+esc(f.id)+'" title="Elimina fattura">✕</button></td>'+
+    '</tr>').join('');
+  if(!rows) rows='<tr><td colspan="6" class="noscad" style="padding:8px">Nessuna fattura: aggiungi le fatture indicate da CA (sono la prova scritta per il ricorso).</td></tr>';
+  return '<div class="ftab-wrap"><table class="ftab"><thead><tr><th>N. fattura</th><th>Data</th><th>Scadenza</th>'+
+    '<th class="num">Importo €</th><th class="num">Pagato €</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="add-ev" style="align-items:center"><button class="btn-ind" data-act="addFattura">＋ Aggiungi fattura</button>'+
+    '<span class="grow"></span><span id="totFatture" class="tot-f">'+htmlTotali(p)+'</span></div>';
+}
+function htmlTotali(p){
+  const t=totali(p);
+  if(!t.daFatture) return '';
+  return 'Totale <b>'+fmtEuro(t.totale)+'</b> · pagato <b>'+fmtEuro(t.pagato)+'</b> · residuo dovuto <b class="res">'+fmtEuro(t.residuo)+'</b>';
+}
 function htmlScadenze(p){
+  let h='';
+  if(moraScadutaSenzaEsito(p)){
+    h+='<div class="banner-ricorso"><div><b>⚠ Il termine della messa in mora è scaduto il '+fmtData(p.fasi.mora.termine_data)+
+       ' senza adempimento.</b><br>È possibile predisporre il ricorso per ingiunzione. '+titoloRicorsoHtml(p)+'</div>'+
+       '<button class="btn-ind" data-act="avanza">▸ Passa al ricorso</button></div>';
+  }
   const l=scadenze(p);
-  if(!l.length) return '<div class="noscad">Nessuna scadenza calcolata: compila le date delle fasi o inserisci un promemoria.</div>';
-  let h='<div class="scad-list">';
+  if(!l.length) return h+'<div class="noscad">Nessuna scadenza calcolata: compila le date delle fasi o inserisci un promemoria.</div>';
+  h+='<div class="scad-list">';
   l.forEach(s=>{
     const g=giorniDa(s.data);
-    const cls=g<0?'late':(g<=7?'soon':'ok');
-    const gi=g<0?('scaduta da '+Math.abs(g)+' gg'):(g===0?'oggi':'fra '+g+' gg');
+    let cls, gi;
+    if(!s.attiva){ cls='past'; gi=s.dilatorio?'decorso':'✓ superata / assolta'; }
+    else { cls=(g<0&&!s.dilatorio)?'late':(g<=7?'soon':'ok');
+      gi=g<0?('scaduta da '+Math.abs(g)+' gg'):(g===0?'oggi':'fra '+g+' gg'); }
     h+='<div class="scad-item '+cls+'"><span class="d">'+fmtData(s.data)+'</span>'+
        '<span>'+esc(s.testo)+'</span><span class="g">'+gi+'</span></div>';
   });
@@ -768,28 +1047,35 @@ function htmlScadenze(p){
 function renderDetail(){
   const p=getPos(openId);
   if(!p){ closePanel(); return; }
+  const scrollTop=$('#panel').scrollTop;
   let steps='';
   FASI.forEach(F=>{
-    const cls = p.stato!=='attiva' ? (p.fase>F.n?'done':'') : (p.fase>F.n?'done':(p.fase===F.n?'current':''));
+    const st=statoFase(p,F.n);
+    const cls = st==='future' ? '' : st;
     steps+='<div class="step '+cls+'" data-act="vaiFase" data-key="'+F.key+'"><b>'+F.n+'</b>'+esc(F.titolo)+'</div>';
   });
   let fasi='';
   for(let i=0;i<6;i++) fasi+=bloccoFase(p,i);
   const ev=p.eventi.slice().sort((a,b)=> a.data<b.data?1:(a.data>b.data?-1:0));
   let tl='';
-  ev.forEach((e,idx)=>{
+  ev.forEach(e=>{
     tl+='<div class="tl-item"><span class="d">'+fmtData(e.data)+'</span><span>'+esc(e.testo)+'</span>'+
         '<button class="x" data-act="delEvento" data-i="'+p.eventi.indexOf(e)+'" title="Elimina evento">✕</button></div>';
   });
   if(!tl) tl='<div class="noscad">Nessun evento registrato.</div>';
 
-  const avanzabile = p.stato==='attiva' && p.fase<=6;
+  const completata = faseCompletata(p);
+  const avanzabile = p.stato==='attiva' && !completata;
+  const tot=totali(p);
+  const btnAvanza = p.fase<6
+    ? '▸ Registra «'+esc(FASI[p.fase-1].titolo)+'» e passa alla fase '+(p.fase+1)
+    : '▸ Registra «'+esc(FASI[5].titolo)+'» (ultima fase)';
   $('#panel').innerHTML =
   '<div class="p-head">'+
     '<div class="row1">'+
       '<span class="cod">'+esc(p.codice)+'</span>'+
       '<h2>'+esc(p.debitore.nome||'Nuova posizione')+'</h2>'+
-      '<span class="imp">'+fmtEuro(p.importo)+'</span>'+
+      '<span class="imp" id="headImporto">'+fmtEuro(tot.residuo)+'</span>'+
       '<button class="p-close" data-act="chiudi" title="Chiudi">✕</button>'+
     '</div>'+
     '<div class="steps">'+steps+'</div>'+
@@ -811,8 +1097,20 @@ function renderDetail(){
       campo(p,'codice','Codice posizione')+
     '</div></div>'+
 
+    '<div class="card" id="cardFatture"><h3>🧾 Fatture e titolo del credito <span class="st '+
+      ((tot.daFatture||p.riconoscimento.presente)?'done':'current')+'">'+
+      (tot.daFatture?tot.n+' fattur'+(tot.n===1?'a':'e'):(p.riconoscimento.presente?'riconoscimento':'da compilare'))+'</span></h3>'+
+      htmlFatture(p)+
+      '<div class="grid" style="margin-top:12px">'+
+        campo(p,'riconoscimento.presente','Riconoscimento di debito del debitore','check')+
+        campo(p,'riconoscimento.data','Data del riconoscimento','date')+
+        campo(p,'riconoscimento.nota','Forma / riferimento (es. email, piano di rientro firmato)')+
+      '</div></div>'+
+
     '<div class="card"><h3>💶 Credito e pratica</h3><div class="grid">'+
-      campo(p,'importo','Importo dovuto (€)','number','step="0.01" min="0"')+
+      (tot.daFatture
+        ? '<label class="field"><span>Importo dovuto (calcolato dalle fatture)</span><input type="text" id="importoCalc" value="'+esc(fmtEuro(tot.residuo))+'" readonly></label>'
+        : campo(p,'importo','Importo dovuto (€) — oppure inserisci le fatture','number','step="0.01" min="0"'))+
       campo(p,'apertura','Data apertura pratica','date')+
       campo(p,'cliente','Cliente (creditore)')+
       campo(p,'cartella','Cartella pratica (percorso)')+
@@ -837,8 +1135,8 @@ function renderDetail(){
   '</div>'+
   '<div class="p-foot">'+
     (avanzabile
-      ? '<button class="btn-primary" data-act="avanza" style="background:var(--indigo);color:#fff;border:0;border-radius:7px;padding:9px 16px;font-weight:700">▸ Registra «'+esc(FASI[p.fase-1].titolo)+'» e passa alla fase '+Math.min(p.fase+1,6)+'</button>'
-      : '<span style="font-size:12.5px;color:var(--mut)">'+(p.stato!=='attiva'?'Posizione chiusa o sospesa':'Procedura completata fino alla fase 6')+'</span>')+
+      ? '<button class="btn-primary" data-act="avanza" style="background:var(--indigo);color:#fff;border:0;border-radius:7px;padding:9px 16px;font-weight:700">'+btnAvanza+'</button>'
+      : '<span style="font-size:12.5px;color:var(--mut)">'+(completata?'✓ Procedura completata: azione esecutiva registrata':'Posizione chiusa o sospesa')+'</span>')+
     '<span class="grow"></span>'+
     '<button class="btn-dark" data-act="comDiPosizione" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)" title="Comunicazioni relative a questa posizione">💬 Comunicazioni</button>'+
     '<select class="stato-sel" data-path="stato">'+
@@ -846,11 +1144,23 @@ function renderDetail(){
     '</select>'+
     '<button class="btn-danger" data-act="elimina">Elimina</button>'+
   '</div>';
+  $('#panel').scrollTop=scrollTop;
+}
+/* aggiornamenti parziali del pannello durante la digitazione (senza ridisegnarlo, per non perdere il focus) */
+function aggiornaTotaliPanel(){
+  const p=getPos(openId); if(!p) return;
+  const t=totali(p);
+  const set=(sel,html,prop)=>{ const el=$(sel); if(el) el[prop||'innerHTML']=html; };
+  set('#totFatture', htmlTotali(p));
+  set('#headImporto', fmtEuro(t.residuo), 'textContent');
+  set('#importoCalc', fmtEuro(t.residuo), 'value');
+  set('#titoloRicorso', titoloRicorsoHtml(p));
 }
 function aggiornaScadenzePanel(){
   const p=getPos(openId);
   const box=$('#panelScadenze');
   if(p&&box) box.innerHTML=htmlScadenze(p);
+  const mi=$('#moraInfo'); if(p&&mi) mi.innerHTML=moraInfoHtml(p);
 }
 
 /* ---------------- render generale ---------------- */
@@ -881,6 +1191,12 @@ function renderCom(){
       l+'<span class="n">'+counts[k]+'</span></button>').join('');
 
   let list=db.comunicazioni.slice();
+  const posF = filtriCom.pos ? getPos(filtriCom.pos) : null;
+  if(filtriCom.pos && !posF) filtriCom.pos='';
+  if(posF) list=list.filter(c=>c.posizione===posF.id);
+  $('#comPosFiltro').innerHTML = posF
+    ? '<button class="b-filtro" data-act="clearPosCom" title="Mostra tutte le comunicazioni">Posizione: '+
+      esc(posF.codice)+' · '+esc(posF.debitore.nome||'')+' ✕</button>' : '';
   if(filtriCom.tipo!=='tutte') list=list.filter(c=>(c.tipo||'altro')===filtriCom.tipo);
   const q=filtriCom.q.trim().toLowerCase();
   if(q) list=list.filter(c=>testoCom(c).toLowerCase().indexOf(q)>=0);
@@ -888,7 +1204,7 @@ function renderCom(){
 
   if(!list.length){
     $('#comList').innerHTML='<div class="card com-empty">Nessuna comunicazione'+
-      ((q||filtriCom.tipo!=='tutte')?' con questi filtri':' registrata')+
+      ((q||filtriCom.tipo!=='tutte'||posF)?' con questi filtri':' registrata')+
       '. Compila il modulo qui sopra per aggiungerne una.</div>';
     return;
   }
@@ -975,9 +1291,12 @@ function closePanel(){ openId=null; $('#overlay').classList.add('hidden'); $('#p
 
 /* ---------------- azioni ---------------- */
 function avanzaFase(p){
-  if(p.stato!=='attiva' || p.fase>6) return;
+  if(p.stato!=='attiva' || p.fase>6 || faseCompletata(p)) return;
   const F=FASI[p.fase-1], f=p.fasi[F.key];
-  if(!f.data) f.data=oggi();
+  if(!f.data){
+    f.data=oggi();
+    if(F.key==='mora' && !f.termine_manuale) f.termine_data=termineMoraCalcolato(p);
+  }
   const esiste=p.storico.some(s=>s.fase===F.n);
   if(!esiste) p.storico.push({fase:F.n, data:f.data});
   const testo={1:'Messa in mora inviata / esito registrato',2:'Deposito del ricorso per ingiunzione',
@@ -1043,19 +1362,40 @@ document.addEventListener('click', e=>{
     if(!txt){ $('#evTesto').focus(); return; }
     p.eventi.push({data:d, testo:txt}); save(); renderDetail(); return; }
   if(act==='delEvento'){ const p=getPos(openId); if(!p) return;
+    const e=p.eventi[+t.dataset.i]; if(!e) return;
+    if(!confirm('Eliminare l\'evento del '+fmtData(e.data)+'?\n«'+e.testo+'»')) return;
     p.eventi.splice(+t.dataset.i,1); save(); renderDetail(); return; }
+  if(act==='addFattura'){ const p=getPos(openId); if(!p) return;
+    const imp=num(p.importo);
+    p.fatture.push(nuovaFattura());
+    if(p.fatture.length===1 && imp){ p.fatture[0].importo=imp; } // l'importo inserito a mano diventa la prima fattura
+    save(); renderAll();
+    setTimeout(()=>{ const el=$('#panel [data-path="fatture.'+(p.fatture.length-1)+'.numero"]'); if(el) el.focus(); },30);
+    return; }
+  if(act==='delFattura'){ const p=getPos(openId); if(!p) return;
+    const f=p.fatture.find(x=>x.id===t.dataset.id); if(!f) return;
+    if((f.numero||num(f.importo)) && !confirm('Eliminare la fattura '+(f.numero||'senza numero')+' ('+fmtEuro(f.importo)+')?')) return;
+    p.fatture=p.fatture.filter(x=>x.id!==f.id);
+    if(!p.fatture.length) p.importo='';
+    save(); renderAll(); return; }
+  if(act==='ricalcolaMora'){ const p=getPos(openId); if(!p) return;
+    p.fasi.mora.termine_data=termineMoraCalcolato(p); p.fasi.mora.termine_manuale=false;
+    save(); renderAll(); return; }
+  if(act==='clearPosCom'){ filtriCom.pos=''; renderCom(); return; }
   if(act==='apriCartella'){ apriCartella(); return; }
   if(act==='copiaCartella'){ copiaCartella(); return; }
   if(act==='tab'){ setView(t.dataset.tab); return; }
-  if(act==='nuovaCom'){ setView('comunicazioni'); resetComForm(); $('#comNota').focus(); return; }
+  if(act==='nuovaCom'){ setView('comunicazioni'); resetComForm(); if(filtriCom.pos) $('#comPos').value=filtriCom.pos; $('#comNota').focus(); return; }
   if(act==='salvaCom'){ salvaCom(); return; }
   if(act==='annullaCom'){ resetComForm(); return; }
   if(act==='modificaCom'){ modificaCom(t.dataset.id); return; }
   if(act==='eliminaCom'){ eliminaCom(t.dataset.id); return; }
   if(act==='filtroCom'){ filtriCom.tipo=t.dataset.t; renderCom(); return; }
   if(act==='comDiPosizione'){ const p=getPos(openId); if(!p) return;
-    closePanel(); setView('comunicazioni'); filtriCom={q:p.codice, tipo:'tutte'};
-    $('#searchCom').value=p.codice; renderCom(); return; }
+    closePanel(); setView('comunicazioni'); filtriCom={q:'', tipo:'tutte', pos:p.id};
+    $('#searchCom').value=''; renderCom();
+    if(!comEditing){ $('#comPos').value=p.id; } // nuova comunicazione già collegata alla posizione
+    return; }
   if(act==='collega'){ $('#menu').classList.add('hidden'); collegaCartella(); return; }
   if(act==='ricarica'){ $('#menu').classList.add('hidden'); ricaricaDaFile(); return; }
   if(act==='esporta'){ $('#menu').classList.add('hidden'); esportaJson(); return; }
@@ -1076,17 +1416,31 @@ document.addEventListener('input', e=>{
   const el=e.target;
   if(el.id==='search'){ filtri.q=el.value; renderTable(); return; }
   if(el.id==='searchCom'){ filtriCom.q=el.value; renderCom(); return; }
-  if(el.id==='statoFilter'){ filtri.stato=el.value; renderTable(); return; }
+  if(el.id==='statoFilter'){ filtri.stato=el.value; renderChips(); renderTable(); return; }
   if(!el.dataset || !el.dataset.path) return;
   const p=getPos(openId); if(!p) return;
   let v;
   if(el.type==='checkbox') v=el.checked;
   else if(el.type==='number') v = el.value==='' ? '' : Number(el.value);
   else v=el.value;
-  setPath(p, el.dataset.path, v);
+  const path=el.dataset.path;
+  setPath(p, path, v);
+  // messa in mora: termine = data invio + giorni, salvo termine inserito a mano
+  const m=p.fasi.mora;
+  if(path==='fasi.mora.data' || path==='fasi.mora.giorni'){
+    if(!m.termine_manuale){
+      m.termine_data=termineMoraCalcolato(p);
+      const tEl=$('#panel [data-path="fasi.mora.termine_data"]'); if(tEl) tEl.value=m.termine_data;
+    }
+  }else if(path==='fasi.mora.termine_data'){
+    m.termine_manuale = !!v && v!==termineMoraCalcolato(p);
+  }
   save();
-  if(el.dataset.path==='stato' || el.dataset.path==='fase'){ renderAll(); }
-  else { renderKpis(); renderChips(); renderTable(); aggiornaScadenzePanel(); }
+  if(path==='stato'){ renderAll(); }
+  else {
+    renderKpis(); renderChips(); renderTable(); aggiornaScadenzePanel();
+    if(path.indexOf('fatture.')===0 || path.indexOf('riconoscimento.')===0) aggiornaTotaliPanel();
+  }
 });
 
 $('#overlay').addEventListener('click', closePanel);
