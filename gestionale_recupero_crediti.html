@@ -473,11 +473,15 @@ function codiceProssimo(){
 }
 const GIORNI_MORA_DEFAULT = 10;
 const FORME_GIURIDICHE = [['',' — seleziona —'],['S.r.l.','S.r.l.'],['S.r.l.s.','S.r.l.s.'],['S.a.s.','S.a.s.'],
-  ['Ditta individuale','Ditta individuale'],['S.p.A.','S.p.A.']];
+  ['Ditta individuale','Ditta individuale'],['S.p.A.','S.p.A.'],['S.n.c.','S.n.c.'],['Soc. coop.','Soc. coop.'],
+  ['S.S.D.','S.S.D.'],['Persona fisica','Persona fisica']];
 /* riconduce le diciture libere delle versioni precedenti (es. "srl", "SRLS", "spa") alla voce dell'elenco */
 function normalizzaForma(v){
-  const k=String(v||'').toLowerCase().replace(/[^a-z]/g,'');
-  const m={srl:'S.r.l.',srls:'S.r.l.s.',sas:'S.a.s.',spa:'S.p.A.',dittaindividuale:'Ditta individuale',ditta:'Ditta individuale'};
+  const k=String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+  const m={srl:'S.r.l.',srls:'S.r.l.s.',sas:'S.a.s.',spa:'S.p.A.',dittaindividuale:'Ditta individuale',ditta:'Ditta individuale',
+    snc:'S.n.c.',soccoop:'Soc. coop.',coop:'Soc. coop.',societacooperativa:'Soc. coop.',scarl:'Soc. coop.',
+    ssd:'S.S.D.',ssdarl:'S.S.D.',societasportivadilettantistica:'S.S.D.',
+    personafisica:'Persona fisica',privato:'Persona fisica'};
   return m[k] || v || '';
 }
 function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', importo:'', pagato:''}; }
