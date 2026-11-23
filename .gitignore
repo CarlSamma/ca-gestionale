@@ -1,0 +1,6 @@
+# Dati reali del registro (debitori, importi, comunicazioni): non vanno su GitHub
+gestionale_ca*.json
+gestionale_ca*.json.md
+
+# Versioni precedenti dell'app conservate in locale
+gestionale_recupero_crediti_old_*.html
