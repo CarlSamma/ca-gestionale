@@ -37,6 +37,16 @@ Aprire con **Chrome o Edge** (doppio clic sul file).
 - **Stampa** del registro.
 - **Codici posizione** `CA-AAAA-NNN` progressivi senza duplicati anche dopo eliminazioni.
 
+## Posta CA (Gmail) — solo nella versione claude.ai
+
+Aperto come artefatto su claude.ai, il gestionale legge la casella **cagestionale@gmail.com** attraverso il connettore Gmail di claude.ai (nessuna configurazione su Google Cloud, le credenziali non passano dall'app).
+
+- Scheda **📥 Posta CA**: elenco delle mail inoltrate dallo studio, con mittente e data del messaggio originale di Como Acqua, tipo (nuova pratica / aggiornamento / comunicazione / non da CA) e allegati (escluse le immagini della firma).
+- **Abbinamento automatico** alla posizione: codice `CA-AAAA-NNN` nell'oggetto, P.IVA, codice cliente CA (nuovo campo *Codici cliente CA* in anagrafica, o presente nelle note), denominazione.
+- Azioni, sempre con conferma: **Crea posizione** (precompilata), **Registra sulla posizione** (comunicazione con link alla mail, evento, completamento dei soli campi vuoti), **Ignora**, **Rimetti da smistare**.
+- **🤖 Analizza con Claude**: estrae dalla mail debitore, codici, importo scaduto, fatture, pagamenti, riconoscimento di debito e una sintesi, da confermare prima di salvare.
+- Le mail smistate ricevono in Gmail l'etichetta **Gestionale/Smistata**; lo stato dello smistamento è salvato anche nel registro (`posta.smistati`).
+
 ## Salvataggio dei dati
 
 - salvataggio **automatico** nel browser (localStorage) a ogni modifica; più schede dello stesso browser restano allineate;
