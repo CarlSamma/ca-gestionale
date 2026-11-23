@@ -240,6 +240,14 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 .com-nota{color:#3c465a;margin-top:3px;white-space:pre-wrap;font-size:13.3px}
 .com-empty{padding:26px;text-align:center;color:var(--mut);font-style:italic}
 @media (max-width:720px){.comwrap{padding:6px 10px 22px}.tabs{padding:10px 10px 0}}
+.dlg-bg{position:fixed;inset:0;background:rgba(12,20,38,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);max-width:520px;width:100%;padding:18px 20px}
+.dlg-msg{white-space:pre-wrap;font-size:14px;line-height:1.5;color:var(--txt)}
+.dlg-bt{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.dlg-bt button{border-radius:8px;padding:8px 16px;font-weight:650;font-size:13.5px;cursor:pointer}
+.dlg-no{background:#fff;border:1px solid #c3cad6;color:var(--txt)}
+.dlg-ok{background:var(--indigo);border:1px solid var(--indigo);color:#fff}
+.dlg-ok.danger{background:var(--red);border-color:var(--red)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);
   color:#fff;border-radius:8px;padding:10px 16px;font-size:13.5px;z-index:99;box-shadow:var(--shadow)}
 
@@ -733,7 +741,7 @@ async function scriviFileDiretto(silent){
     fileOk=true; aggiornaStatus(); return true;
   }catch(err){
     fileOk=false; aggiornaStatus('⚠ File non scritto: '+err.message,'err');
-    if(!silent) alert('Salvataggio su file non riuscito:\n'+err.message);
+    if(!silent) avviso('Salvataggio su file non riuscito:\n'+err.message);
     return false;
   }
 }
@@ -765,16 +773,16 @@ function adottaFile(f){
 async function gestisciConflitto(f){
   if(conflittoAperto) return; conflittoAperto=true;
   try{
-    const usaFile = confirm('⚠ ATTENZIONE — il file '+FILE_NAME+' è stato modificato da un altro computer o browser, '+
+    const usaFile = await conferma('⚠ ATTENZIONE — il file '+FILE_NAME+' è stato modificato da un altro computer o browser, '+
       'e anche questo browser ha modifiche non ancora salvate nel file.\n\n'+
-      'FILE:               '+descrVersione(f)+'\nQUESTO BROWSER: '+descrVersione(db)+'\n\n'+
-      'OK = usa la versione del FILE\nAnnulla = usa la versione di QUESTO BROWSER (sovrascrive il file)\n\n'+
-      'In entrambi i casi la versione scartata viene salvata come copia nella cartella.');
+      'FILE: '+descrVersione(f)+'\nQUESTO BROWSER: '+descrVersione(db)+'\n\n'+
+      'Quale versione vuoi tenere? L\'altra viene salvata come copia nella cartella.',
+      {ok:'Usa la versione del FILE', annulla:'Usa QUESTO BROWSER'});
     const scartata = usaFile ? db : f;
     const nomeCopia = 'gestionale_ca_conflitto_'+new Date().toISOString().replace(/[-:]/g,'').replace('T','_').slice(0,15)+
       (usaFile?'_browser':'_file')+'.json';
     try{ await scriviJson(nomeCopia, scartata); }
-    catch(e){ alert('Impossibile salvare la copia della versione scartata ('+e.message+').\nOperazione annullata: esporta un backup JSON e riprova.'); return; }
+    catch(e){ avviso('Impossibile salvare la copia della versione scartata ('+e.message+').\nOperazione annullata: esporta un backup JSON e riprova.'); return; }
     if(usaFile){ adottaFile(f); toast('Caricata la versione del file · copia salvata: '+nomeCopia); }
     else { await scriviFileDiretto(false); toast('File sovrascritto · copia salvata: '+nomeCopia); }
   }finally{ conflittoAperto=false; }
@@ -802,7 +810,7 @@ async function chiediPermesso(){
 }
 async function collegaCartella(){
   if(!window.showDirectoryPicker){
-    alert('Il browser non supporta il salvataggio diretto su file.\nUsa Chrome o Edge, oppure Esporta/Importa JSON.');
+    avviso('Il browser non supporta il salvataggio diretto su file.\nUsa Chrome o Edge, oppure Esporta/Importa JSON.');
     return;
   }
   try{
@@ -812,7 +820,7 @@ async function collegaCartella(){
     await sincronizza();
     if(fileOk) aggiornaStatus('✓ Cartella collegata: '+FILE_NAME,'ok');
     toast('Cartella collegata: i dati verranno salvati anche in '+FILE_NAME);
-  }catch(err){ if(err && err.name!=='AbortError') alert('Impossibile collegare la cartella:\n'+err.message); }
+  }catch(err){ if(err && err.name!=='AbortError') avviso('Impossibile collegare la cartella:\n'+err.message); }
 }
 async function ricaricaDaFile(){
   if(!dirHandle){ await collegaCartella(); return; }
@@ -821,7 +829,7 @@ async function ricaricaDaFile(){
   if(perm!=='granted'){ pendingPerm=true; aggiornaStatus('⚠ Permesso cartella da concedere','warn'); return; }
   pendingPerm=false;
   const f=await leggiFile();
-  if(!f){ alert('Nessun file '+FILE_NAME+' nella cartella collegata.'); return; }
+  if(!f){ avviso('Nessun file '+FILE_NAME+' nella cartella collegata.'); return; }
   if(db && db.aggiornato!==fileBase && db.aggiornato!==f.aggiornato){ await gestisciConflitto(f); return; }
   adottaFile(f); fileOk=true; aggiornaStatus(); toast('Registro ricaricato dal file');
 }
@@ -832,12 +840,12 @@ async function esportaJson(){
   const nome='gestionale_ca_'+oggi()+'.json', testo=JSON.stringify(db,null,2);
   if(IN_ARTEFATTO){
     const dl=await downloadsPronto;
-    if(!dl){ alert('Esportazione non disponibile in questa vista.'); return; }
+    if(!dl){ avviso('Esportazione non disponibile in questa vista.'); return; }
     try{ await dl.save({filename:nome, data:testo}); toast('Registro esportato'); }
     catch(err){
       const c=err&&err.code;
       if(c==='declined') return;
-      alert(c==='rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
+      avviso(c==='rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
                                : 'Esportazione non riuscita: '+((err&&err.message)||c||err));
     }
     return;
@@ -1714,7 +1722,7 @@ function resetComForm(){
 function salvaCom(){
   const data=$('#comData').value||oggi();
   const oggetto=$('#comOggetto').value.trim(), nota=$('#comNota').value.trim();
-  if(!oggetto && !nota){ alert('Inserire almeno un oggetto o una nota.'); $('#comOggetto').focus(); return; }
+  if(!oggetto && !nota){ avviso('Inserire almeno un oggetto o una nota.'); $('#comOggetto').focus(); return; }
   const rec={ data, tipo:$('#comTipo').value, soggetto:$('#comSoggetto').value.trim(),
     canale:$('#comCanale').value, posizione:$('#comPos').value, oggetto, nota };
   if(comEditing){
@@ -1742,9 +1750,9 @@ function modificaCom(id){
   $('#comAnnulla').style.display='';
   $('#comForm').scrollIntoView({behavior:'smooth', block:'start'});
 }
-function eliminaCom(id){
+async function eliminaCom(id){
   const c=db.comunicazioni.find(x=>x.id===id); if(!c) return;
-  if(!confirm('Eliminare la comunicazione del '+fmtData(c.data)+'?')) return;
+  if(!(await conferma('Eliminare la comunicazione del '+fmtData(c.data)+'?', {ok:'Elimina', pericolo:true}))) return;
   db.comunicazioni=db.comunicazioni.filter(x=>x.id!==id);
   if(comEditing===id) resetComForm();
   save(); renderAll(); toast('Comunicazione eliminata');
@@ -1784,31 +1792,55 @@ function avanzaFase(p){
 }
 function nuova(){ const p=nuovaPosizione(); db.posizioni.unshift(p); save(); renderAll(); apri(p.id);
   setTimeout(()=>{ const el=$('#panel [data-path="debitore.nome"]'); if(el) el.focus(); },60); }
-function elimina(id){
+async function elimina(id){
   const p=getPos(id); if(!p) return;
-  if(!confirm('Eliminare definitivamente la posizione "'+(p.codice||'')+' — '+(p.debitore.nome||'')+'"?')) return;
+  if(!(await conferma('Eliminare definitivamente la posizione "'+(p.codice||'')+' — '+(p.debitore.nome||'')+'"?\nL\'operazione non si può annullare.', {ok:'Elimina posizione', pericolo:true}))) return;
+  if(!getPos(id)) return;
   db.posizioni=db.posizioni.filter(x=>x.id!==id);
   save(); closePanel(); renderAll(); toast('Posizione eliminata');
 }
+/* finestre di dialogo nella pagina: nell'artefatto claude.ai alert() e confirm() del browser sono bloccati */
+function dialogo(msg, opz){
+  opz=opz||{};
+  return new Promise(res=>{
+    const bg=document.createElement('div'); bg.className='dlg-bg';
+    bg.innerHTML='<div class="dlg" role="dialog" aria-modal="true"><div class="dlg-msg"></div><div class="dlg-bt">'+
+      (opz.annulla!==false?'<button class="dlg-no" id="dlgAnnulla"></button>':'')+
+      '<button class="dlg-ok'+(opz.pericolo?' danger':'')+'" id="dlgOk"></button></div></div>';
+    bg.querySelector('.dlg-msg').textContent=msg;
+    bg.querySelector('#dlgOk').textContent=opz.ok||'OK';
+    const no=bg.querySelector('#dlgAnnulla'); if(no) no.textContent=opz.annulla||'Annulla';
+    const chiudi=v=>{ document.removeEventListener('keydown', tasti, true); bg.remove(); res(v); };
+    const tasti=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); chiudi(opz.annulla===false); }
+                     else if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); chiudi(true); } };
+    document.addEventListener('keydown', tasti, true);
+    bg.addEventListener('click', e=>{ e.stopPropagation();
+      if(e.target.id==='dlgOk') chiudi(true); else if(e.target.id==='dlgAnnulla') chiudi(false); });
+    document.body.appendChild(bg);
+    setTimeout(()=>bg.querySelector('#dlgOk').focus(),0);
+  });
+}
+function conferma(msg, opz){ return dialogo(msg, opz); }
+function avviso(msg){ return dialogo(msg, {annulla:false}); }
 function toast(msg){
   const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
   document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
 }
 function apriCartella(){
   const p=getPos(openId); const path=(p&&p.cartella||'').trim();
-  if(!path){ alert('Nessun percorso inserito nel campo «Cartella pratica».'); return; }
+  if(!path){ avviso('Nessun percorso inserito nel campo «Cartella pratica».'); return; }
   const url='file:///'+path.replace(/\\/g,'/').replace(/^\/+/,'');
   window.open(url,'_blank');
 }
 function copiaCartella(){
   const p=getPos(openId); const path=(p&&p.cartella||'').trim();
-  if(!path){ alert('Nessun percorso inserito.'); return; }
+  if(!path){ avviso('Nessun percorso inserito.'); return; }
   const done=()=>toast('Percorso copiato');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(path).then(done).catch(()=>fallback());
   }else fallback();
   function fallback(){ const ta=document.createElement('textarea'); ta.value=path; document.body.appendChild(ta);
-    ta.select(); try{document.execCommand('copy'); done();}catch(e){alert(path);} ta.remove(); }
+    ta.select(); try{document.execCommand('copy'); done();}catch(e){avviso(path);} ta.remove(); }
 }
 
 /* ---------------- eventi ---------------- */
@@ -1838,8 +1870,10 @@ document.addEventListener('click', e=>{
     p.eventi.push({data:d, testo:txt}); save(); renderDetail(); return; }
   if(act==='delEvento'){ const p=getPos(openId); if(!p) return;
     const e=p.eventi[+t.dataset.i]; if(!e) return;
-    if(!confirm('Eliminare l\'evento del '+fmtData(e.data)+'?\n«'+e.testo+'»')) return;
-    p.eventi.splice(+t.dataset.i,1); save(); renderDetail(); return; }
+    conferma('Eliminare l\'evento del '+fmtData(e.data)+'?\n«'+e.testo+'»', {ok:'Elimina', pericolo:true}).then(ok=>{
+      if(!ok) return; const i=p.eventi.indexOf(e); if(i<0) return;
+      p.eventi.splice(i,1); save(); renderDetail(); });
+    return; }
   if(act==='addFattura'){ const p=getPos(openId); if(!p) return;
     const imp=num(p.importo);
     p.fatture.push(nuovaFattura());
@@ -1849,10 +1883,10 @@ document.addEventListener('click', e=>{
     return; }
   if(act==='delFattura'){ const p=getPos(openId); if(!p) return;
     const f=p.fatture.find(x=>x.id===t.dataset.id); if(!f) return;
-    if((f.numero||num(f.importo)) && !confirm('Eliminare la fattura '+(f.numero||'senza numero')+' ('+fmtEuro(f.importo)+')?')) return;
-    p.fatture=p.fatture.filter(x=>x.id!==f.id);
-    if(!p.fatture.length) p.importo='';
-    save(); renderAll(); return; }
+    const via=()=>{ p.fatture=p.fatture.filter(x=>x.id!==f.id); if(!p.fatture.length) p.importo=''; save(); renderAll(); };
+    if(f.numero||num(f.importo)) conferma('Eliminare la fattura '+(f.numero||'senza numero')+' ('+fmtEuro(f.importo)+')?', {ok:'Elimina', pericolo:true}).then(ok=>{ if(ok) via(); });
+    else via();
+    return; }
   if(act==='ricalcolaMora'){ const p=getPos(openId); if(!p) return;
     p.fasi.mora.termine_data=termineMoraCalcolato(p); p.fasi.mora.termine_manuale=false;
     save(); renderAll(); return; }
@@ -1890,12 +1924,15 @@ document.addEventListener('click', e=>{
     const n=db.posizioni.filter(p=>p.codice==='CA-ES000').length;
     db.posizioni=db.posizioni.filter(p=>p.codice!=='CA-ES000');
     if(n){ save(); renderAll(); toast('Posizione esempio eliminata'); }
-    else alert('Nessuna posizione esempio presente.'); return; }
+    else avviso('Nessuna posizione esempio presente.'); return; }
   if(act==='reset'){ $('#menu').classList.add('hidden');
-    if(!confirm('Azzerare tutto il registro? L\'operazione è irreversibile.\n(Suggerimento: prima usa «Esporta JSON» per un backup.)')) return;
-    if(!confirm('Sicuro? Verranno eliminate TUTTE le posizioni.')) return;
-    db={versione:1, aggiornato:Date.now(), posizioni:[], comunicazioni:[]};
-    save(); closePanel(); renderAll(); toast('Registro azzerato'); return; }
+    (async()=>{
+      if(!(await conferma('Azzerare tutto il registro? L\'operazione è irreversibile.\n(Suggerimento: prima usa «Esporta JSON» per un backup.)', {ok:'Continua', pericolo:true}))) return;
+      if(!(await conferma('Sicuro? Verranno eliminate TUTTE le posizioni.', {ok:'Azzera il registro', pericolo:true}))) return;
+      db={versione:2, aggiornato:Date.now(), posizioni:[], comunicazioni:[], posta:{smistati:{}}};
+      save(); closePanel(); renderAll(); toast('Registro azzerato');
+    })();
+    return; }
 });
 
 document.addEventListener('input', e=>{
@@ -1938,19 +1975,18 @@ document.addEventListener('input', e=>{
 });
 
 $('#overlay').addEventListener('click', closePanel);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !document.querySelector('.dlg-bg')) closePanel(); });
 
 $('#importFile').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{
-    try{
-      const d=normalizza(JSON.parse(r.result));
-      if(!d) throw new Error('struttura non valida');
-      if(!confirm('Importare il file e sostituire il registro attuale?\n('+d.posizioni.length+' posizioni, '+d.comunicazioni.length+' comunicazioni)')) return;
-      db=d; save(); closePanel(); renderAll(); resetComForm(); toast('Registro importato');
-    }catch(err){ alert('File non valido: '+err.message); }
+  r.onload=async()=>{
     e.target.value='';
+    let d;
+    try{ d=normalizza(JSON.parse(r.result)); if(!d) throw new Error('struttura non valida'); }
+    catch(err){ avviso('File non valido: '+err.message); return; }
+    if(!(await conferma('Importare il file e sostituire il registro attuale?\n('+d.posizioni.length+' posizioni, '+d.comunicazioni.length+' comunicazioni)', {ok:'Importa'}))) return;
+    db=d; save(); closePanel(); renderAll(); resetComForm(); toast('Registro importato');
   };
   r.readAsText(f);
 });
