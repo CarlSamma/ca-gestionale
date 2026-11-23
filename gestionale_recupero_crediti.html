@@ -779,11 +779,27 @@ async function ricaricaDaFile(){
   if(db && db.aggiornato!==fileBase && db.aggiornato!==f.aggiornato){ await gestisciConflitto(f); return; }
   adottaFile(f); fileOk=true; aggiornaStatus(); toast('Registro ricaricato dal file');
 }
-function esportaJson(){
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+/* dentro un artefatto claude.ai i download diretti sono bloccati: si passa dalla capability «downloads» */
+const IN_ARTEFATTO = !!(window.claude && typeof window.claude.use==='function');
+const downloadsPronto = IN_ARTEFATTO ? window.claude.use('downloads').catch(()=>null) : Promise.resolve(null);
+async function esportaJson(){
+  const nome='gestionale_ca_'+oggi()+'.json', testo=JSON.stringify(db,null,2);
+  if(IN_ARTEFATTO){
+    const dl=await downloadsPronto;
+    if(!dl){ alert('Esportazione non disponibile in questa vista.'); return; }
+    try{ await dl.save({filename:nome, data:testo}); toast('Registro esportato'); }
+    catch(err){
+      const c=err&&err.code;
+      if(c==='declined') return;
+      alert(c==='rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
+                               : 'Esportazione non riuscita: '+((err&&err.message)||c||err));
+    }
+    return;
+  }
+  const blob=new Blob([testo],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='gestionale_ca_'+oggi()+'.json';
+  a.download=nome;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),3000);
   toast('Registro esportato');
@@ -793,7 +809,11 @@ function importaJson(){ $('#importFile').click(); }
 /* ---------------- inizializzazione ---------------- */
 (async function init(){
   db=loadLocal();
-  try{ dirHandle=await idbGet('dir'); }catch(e){ dirHandle=null; }
+  if(IN_ARTEFATTO){ // nell'artefatto non si può accedere alle cartelle del computer
+    document.querySelectorAll('#menu [data-act="collega"],#menu [data-act="ricarica"]').forEach(b=>b.remove());
+    $('#menuHint').innerHTML='Versione online: i dati restano salvati in questo browser. Usa <b>Esporta JSON</b> per un backup e <b>Importa JSON</b> per caricare il file <b>gestionale_ca.json</b>.';
+  }
+  try{ dirHandle=IN_ARTEFATTO ? null : await idbGet('dir'); }catch(e){ dirHandle=null; }
   if(dirHandle){
     const perm=await permesso();
     if(perm==='granted'){ await sincronizza(); }
