@@ -1126,7 +1126,7 @@ function segnaSmistata(m, azione, p){
 }
 function creaDaMail(m){
   const f=formMail(m);
-  if(!String(f.nome||'').trim()){ alert('Indica la denominazione del debitore.'); return; }
+  if(!String(f.nome||'').trim()){ toast('Indica la denominazione del debitore'); return; }
   const p=nuovaPosizione(), a=m.a;
   p.apertura=oggi();
   p.note='Pratica aperta dalla mail di CA del '+fmtData(a.orig.data)+': '+a.oggetto;
@@ -1139,7 +1139,7 @@ function creaDaMail(m){
 }
 function registraSuPosizione(m){
   const f=formMail(m), p=getPos(f.posizione);
-  if(!p){ alert('Scegli la posizione a cui collegare la mail.'); return; }
+  if(!p){ toast('Scegli la posizione a cui collegare la mail'); return; }
   const a=m.a;
   const fatte=f.completa ? completaPosizione(p, f) : [];
   let ev='Mail di CA: '+a.oggetto;
