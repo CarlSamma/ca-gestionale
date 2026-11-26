@@ -380,7 +380,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5.1</div>
     </div>
   </div>
   <div class="actions">
@@ -665,7 +665,7 @@ function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', impo
 function nuovaPosizione(){
   return {
     id: uid(), codice: codiceProssimo(), cliente:'CA',
-    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:'', codici:''},
+    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:'', codici:'', contratti:'', tipologia:'', statoUtenza:'', statoPiva:''},
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
     fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
@@ -706,6 +706,11 @@ function migraPosizione(p){
   }
   if(!Array.isArray(p.annotazioni)) p.annotazioni=[];
   if(typeof p.attesa!=='string') p.attesa='';
+  if(p.datiCA){ const d=p.datiCA, dd=p.debitore; // v1.5.1: tipologia, contratti e stati letti dalla mail ora stanno in anagrafica
+    if(!dd.contratti && (d.contratti||[]).length) dd.contratti=d.contratti.join(' / ');
+    if(!dd.tipologia && d.tipologia) dd.tipologia=d.tipologia;
+    if(!dd.statoUtenza && (d.statiUtenza||[]).length) dd.statoUtenza=d.statiUtenza.join(' · ');
+    if(!dd.statoPiva && d.statoPiva) dd.statoPiva=d.statoPiva; }
   p.annotazioni.forEach(n=>{ if(!n.id) n.id=uid(); });
   return p;
 }
@@ -1236,11 +1241,15 @@ function smistata(m){
 /* ---------- modulo di smistamento ---------- */
 function formMail(m){
   if(posta.form[m.id]) return posta.form[m.id];
-  const a=m.a, ab=abbinaPosizione(a);
-  return posta.form[m.id] = { nome:a.nome, forma:normalizzaForma(a.nome.match(/\b(S\.?R\.?L\.?S|S\.?R\.?L|S\.?A\.?S|S\.?P\.?A|S\.?N\.?C)\.?\b/i)?.[0]||''),
-    codici:a.codici.join(' / '), piva:a.piva, pec:'', sede:'', importo:a.importo!=null?a.importo:'',
+  const a=m.a, d=datiMailCA(a.oggetto, a.corpo), ab=abbinaPosizione(Object.assign({}, a, {piva:d.piva||a.piva, codici:d.codici.length?d.codici:a.codici, nome:d.nome||a.nome}));
+  const nome=d.nome||a.nome;
+  return posta.form[m.id] = { nome, forma:d.forma||formaDaNome(nome),
+    codici:(d.codici.length?d.codici:a.codici).join(' / '), piva:d.piva||a.piva, pec:d.pec,
+    sede:d.via ? d.via+(d.cap||d.comune?', '+[d.cap,d.comune].filter(Boolean).join(' '):'') : '',
+    contratti:d.contratti.join(' / '), tipologia:d.tipologia, statoUtenza:d.statiUtenza.join(' · '), statoPiva:d.statoPiva,
+    importo:a.importo!=null?a.importo:(d.importo!=null?d.importo:''),
     posizione: ab.pos?ab.pos.id:'', come: ab.come, completa:true, fatture:[], usaFatture:true,
-    riconoscimento:null, sintesi:'', daVerificare:[], automatiche:(a.verifiche||[]).slice() };
+    riconoscimento:null, sintesi:'', daVerificare:[], automatiche:(a.verifiche||[]).concat(d.verifiche.filter(v=>(a.verifiche||[]).indexOf(v)<0)) };
 }
 function applicaAnalisi(m, r){
   const f=formMail(m), d=(r&&r.debitore)||{};
@@ -1314,7 +1323,9 @@ function completaPosizione(p, f){
     d.sedeDivisa=true; fatte.push('sede');
   }
   if(f.forma && !d.forma){ d.forma=normalizzaForma(f.forma); fatte.push('forma giuridica'); }
-  const nuovi=String(f.codici||'').split(/\s*\/\s*/).filter(Boolean).filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  se('contratti',f.contratti,'codici contratto'); se('tipologia',f.tipologia,'tipologia utenza');
+  se('statoUtenza',f.statoUtenza,'stato dell\'utenza'); se('statoPiva',f.statoPiva,'stato della P.IVA');
+  const nuovi=String(f.codici||'').split(/\s*\/\s*/).filter(Boolean).filter(c=>String(d.codici||'').toUpperCase().indexOf(c.toUpperCase())<0); // non le note: contengono l'oggetto della mail
   if(nuovi.length){ d.codici=[d.codici].concat(nuovi).filter(Boolean).join(' / '); fatte.push('codici cliente'); }
   if(f.usaFatture && f.fatture && f.fatture.length){
     const visti=new Set(p.fatture.map(x=>String(x.numero||'').replace(/\s/g,'').toLowerCase()));
@@ -1431,7 +1442,8 @@ function htmlMailDettaglio(m){
   }
   if(!sm){
     h+='<div class="grid mail-form">'+inp('nome','Debitore')+inp('forma','Forma giuridica')+inp('codici','Codici cliente CA')+
-      inp('piva','P.IVA / C.F.')+inp('pec','PEC')+inp('sede','Sede')+inp('importo','Importo scaduto indicato (€)','number')+
+      inp('piva','P.IVA / C.F.')+inp('pec','PEC')+inp('sede','Sede (via, CAP comune)')+inp('contratti','Codici contratto')+inp('tipologia','Tipologia utenza')+
+      inp('statoUtenza','Stato dell\'utenza')+inp('statoPiva','Stato della Partita IVA')+inp('importo','Importo scaduto indicato (€)','number')+
       '<label class="field"><span>Posizione nel gestionale'+(f.come?' <i>(trovata per '+esc(f.come)+')</i>':'')+'</span>'+
       '<select data-pf="'+esc(m.id)+'|posizione"><option value="">＋ Nuova posizione</option>'+
       db.posizioni.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===f.posizione?' selected':'')+'>'+esc(p.codice+' · '+(p.debitore.nome||''))+'</option>').join('')+
@@ -1547,7 +1559,7 @@ function posizioniVista(){
   const q=filtri.q.trim().toLowerCase();
   if(q) list=list.filter(p=>{
     const f=p.fasi||{};
-    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.debitore.codici,p.note,p.promemoria&&p.promemoria.testo,
+    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.debitore.codici,p.debitore.pec,p.debitore.contratti,p.note,p.promemoria&&p.promemoria.testo,
             f.ricorso&&f.ricorso.rg,f.decreto&&f.decreto.numero,f.esecuzione&&f.esecuzione.nota]
            .concat((p.fatture||[]).map(x=>x.numero))
            .concat((p.annotazioni||[]).map(x=>x.testo))
@@ -1790,6 +1802,10 @@ function renderDetail(){
       campo(p,'debitore.piva','P. IVA / C.F.')+
       campo(p,'debitore.pec','PEC')+
       campo(p,'debitore.codici','Codici cliente CA (es. C681 / 013206002719)')+
+      campo(p,'debitore.contratti','Codici contratto')+
+      campo(p,'debitore.tipologia','Tipologia utenza')+
+      campo(p,'debitore.statoUtenza','Stato dell\'utenza')+
+      campo(p,'debitore.statoPiva','Stato della Partita IVA')+
       campo(p,'codice','Codice posizione')+
     '</div></div>'+
 
@@ -1858,8 +1874,7 @@ function htmlDatiCA(p){
       r('Mail:', fmtData(d.data)+' — '+(d.oggetto||''))+
       r('Importo Totale Scaduto:', d.importo!=null?fmtEuro(d.importo):'non indicato')+
       ((d.posizioni||[]).length>1?r('Posizioni:', d.posizioni.map(x=>'n. '+x.n+' '+fmtEuro(x.importo)).join(' · ')):'')+
-      r('Contratti:', (d.contratti||[]).join(' / '))+r('Tipologia utenza:', d.tipologia)+
-      r('Stato utenza:', (d.statiUtenza||[]).join(' · '))+r('Stato della Partita IVA:', d.statoPiva)+
+
       '</div>';
   }
   if(p.cartellaLetta) h+='<div class="desc" style="margin:6px 0 0">Cartella letta il '+new Date(p.cartellaLetta).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})+
@@ -2988,7 +3003,8 @@ async function leggiEstrattoConto(buf){
 
 /* ---------- aggiornamento di una posizione dalla sua cartella ---------- */
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9@]/g,'');
-const CAMPI_ANAG=[['nome','Denominazione'],['forma','Forma giuridica'],['indirizzo','Indirizzo sede'],['cap','CAP'],['sede','Comune'],['piva','P.IVA / C.F.'],['pec','PEC']];
+const CAMPI_ANAG=[['nome','Denominazione'],['forma','Forma giuridica'],['indirizzo','Indirizzo sede'],['cap','CAP'],['sede','Comune'],['piva','P.IVA / C.F.'],['pec','PEC'],
+  ['contratti','Codici contratto'],['tipologia','Tipologia utenza'],['statoUtenza','Stato dell\'utenza'],['statoPiva','Stato della Partita IVA']];
 function allegatoUtile(n){ return !/^image\d*\.(png|jpe?g|gif)$|^(logo|facebook|instagram|linkedin|youtube|shutterstock|icona)[_\w-]*\.(png|jpe?g|gif)$/i.test(n); }
 async function aggiornaPratica(p, c){
   const rep={p, c, fatti:[], nuovi:[], modificati:[], verifiche:[], diff:[], errori:[], primaVolta:!p.cartellaIndice || !Object.keys(p.cartellaIndice).length};
@@ -3084,12 +3100,13 @@ async function aggiornaPratica(p, c){
   return rep;
 }
 function applicaDatiMail(p, d, rep){
-  const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec};
+  const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec,
+    contratti:d.contratti.join(' / '), tipologia:d.tipologia, statoUtenza:d.statiUtenza.join(' · '), statoPiva:d.statoPiva};
   CAMPI_ANAG.forEach(([k,lab])=>{ const v=String(val[k]||'').trim(); if(!v) return; const cur=String(p.debitore[k]||'').trim();
     if(!cur){ p.debitore[k]=v; rep.fatti.push(lab+': '+v); }
     else if(norm(cur)!==norm(v)) rep.diff.push({k, lab, ora:cur, mail:v, valore:v}); });
   p.debitore.sedeDivisa=true;
-  const nuovi=d.codici.filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  const nuovi=d.codici.filter(c=>String(p.debitore.codici||'').toUpperCase().indexOf(c.toUpperCase())<0);
   if(nuovi.length){ p.debitore.codici=[p.debitore.codici].concat(nuovi).filter(Boolean).join(' / '); rep.fatti.push('Codici cliente: '+nuovi.join(' / ')); }
   if(d.importo!=null && !p.fatture.length){
     if(p.importo===''||p.importo==null){ p.importo=d.importo; rep.fatti.push('Importo totale scaduto: '+fmtEuro(d.importo)); }
