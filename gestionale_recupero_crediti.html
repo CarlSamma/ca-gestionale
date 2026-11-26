@@ -380,7 +380,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5.1</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5.2</div>
     </div>
   </div>
   <div class="actions">
@@ -541,7 +541,7 @@ const STATI = [
 ];
 const ESITO_MORA = [['','— in attesa —'],['silenzio','Nessun riscontro (silenzio)'],
   ['riscontro','Riscontro del debitore'],['pagamento','Pagamento integrale'],
-  ['pagamento_p','Pagamento parziale / trattativa']];
+  ['pagamento_p','Pagamento parziale / trattativa'],['non_consegnata','PEC non consegnata — da reinviare']];
 const ESITO_NOTIFICA = [['','—'],['Eseguita','Eseguita'],['Negativa — irreperibile','Negativa — irreperibile'],
   ['Negativa — PEC non consegnata','Negativa — PEC non consegnata']];
 const OPPOSIZIONE = [['','— in attesa —'],['nessuna','Nessuna (termine decorso)'],
@@ -772,7 +772,9 @@ function scadenze(p){
   const conNote=(t,r)=> t+(r&&r.note.length?' ['+r.note.join('; ')+']':'');
 
   // Fase 1 — messa in mora (termine sostanziale assegnato al debitore)
-  if(f.mora && f.mora.termine_data){
+  if(f.mora && f.mora.esito==='non_consegnata'){
+    push(f.mora.data||oggi(), 'PEC della messa in mora NON CONSEGNATA → verificare l\'indirizzo PEC e reinviare', p.fase===1);
+  } else if(f.mora && f.mora.termine_data){
     const att = p.fase===1 && f.mora.esito!=='pagamento';
     const t = moraScadutaSenzaEsito(p)
       ? 'Termine della messa in mora decorso senza adempimento → predisporre il ricorso per ingiunzione'
@@ -3099,14 +3101,8 @@ async function aggiornaPratica(p, c){
   /* 3a) PEC non consegnate: avviso di mancata consegna nuovo */
   files.filter(x=>inMail(x) && /\.eml$/i.test(x.nome) && /MANCATA\s+CONSEGNA|NON\s+ACCETTAZIONE|ERRORE\s+DI\s+CONSEGNA/i.test(x.nome) && daLeggere.has(x.rel))
     .forEach(x=>rep.verifiche.push('PEC NON CONSEGNATA: «'+x.nome.replace(/\.eml$/i,'')+'» — verificare l\'indirizzo PEC e reinviare'));
-  /* 3) ricevute di consegna PEC nuove: possibile data di invio della messa in mora (la più recente) */
-  if(p.fase===1 && !p.fasi.mora.data){
-    let ult=null;
-    for(const x of files.filter(x=>inMail(x) && /\.eml$/i.test(x.nome) && /^(?:AVVENUTA\s+)?CONSEGNA\b/i.test(x.nome) && daLeggere.has(x.rel))){
-      try{ const m=emlLeggi(await x.f.arrayBuffer()); const dt=m.data||iso(new Date(x.mod)); if(!ult || dt>ult.dt) ult={dt, ogg:m.oggetto||x.nome}; }catch(e){}
-    }
-    if(ult) rep.diff.push({k:'moraData', lab:'Data invio messa in mora (ricevuta di consegna PEC «'+ult.ogg.slice(0,90)+'»)', ora:'—', mail:fmtData(ult.dt), valore:ult.dt});
-  }
+  /* 3) messa in mora: lettera (.docx) e ricevute PEC → data di consegna, giorni e termine */
+  try{ await controllaMora(p, files, rep); }catch(e){ rep.errori.push('Controllo della messa in mora non riuscito: '+e.message); }
   /* 4) indice dei file e documenti nuovi */
   const nuovo={}; files.forEach(x=>nuovo[x.rel]=x.mod); p.cartellaIndice=nuovo; p.cartellaLetta=new Date().toISOString();
   if(rep.primaVolta){ p.eventi.push({data:oggi(), testo:'Cartella collegata al gestionale: '+c.rel+' ('+files.length+(files.length===1?' documento)':' documenti)')}); }
@@ -3116,6 +3112,93 @@ async function aggiornaPratica(p, c){
   }
   rep.totFile=files.length;
   return rep;
+}
+/* ---------- messa in mora: lettere dello Studio e ricevute PEC ----------
+   Il termine decorre dal ricevimento: per la PEC è la data della ricevuta di avvenuta consegna.
+   Lettere: .docx con «termine di N giorni» e «vorrete inviare / credito di Como Acqua» (data da «Como, gg/mm/aaaa»).
+   Ricevute: .eml «CONSEGNA» / «AVVISO DI MANCATA CONSEGNA», raggruppate per X-Riferimento-Message-ID (un invio).
+   Si rilegge solo se cambiano i file (p.moraFirma). */
+const RE_RICEVUTA_NOME=/^(?:(?:AVVENUTA\s+)?CONSEGNA|(?:AVVISO\s+DI\s+)?MANCATA\s+CONSEGNA|ERRORE\s+DI\s+CONSEGNA|(?:AVVISO\s+DI\s+)?NON\s+ACCETTAZIONE)\b/i;
+function testoDocx(xml){
+  return xml.replace(/<\/w:p>/g,'\n').replace(/<w:(?:tab|br)\/>/g,' ').replace(/<[^>]+>/g,'')
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&').replace(/ /g,' ');
+}
+async function letteraMora(x){
+  const e=zipLeggi(await x.f.arrayBuffer()).find(e=>e.name==='word/document.xml'); if(!e) return null;
+  const t=testoDocx(await zipTesto(e));
+  if(!/vorrete\s+inviare|credito\s+di\s+Como\s*Acqua/i.test(t)) return null;
+  const g=t.match(/termine\s+di\s+(\d{1,3})\s*(?:\([^)]*\)\s*)?giorni/i); if(!g) return null;
+  const d=t.match(/Como,?\s+(\d{1,2})[\/.](\d{1,2})[\/.](\d{4}|\d{2})\b/i);
+  const data=d ? (d[3].length===2?'20'+d[3]:d[3])+'-'+d[2].padStart(2,'0')+'-'+d[1].padStart(2,'0') : iso(new Date(x.mod));
+  const pec=(t.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g)||[]).map(a=>a.toLowerCase()).filter(a=>!/baccaglini|curioni/.test(a));
+  return {rel:x.rel, dir:x.rel.replace(/[^/]*$/,''), nome:x.nome, data, giorni:+g[1], pec};
+}
+function ricevutaPec(buf, x){
+  const m=emlLeggi(buf), raw=latinDaBytes(new Uint8Array(buf, 0, Math.min(buf.byteLength, 20000)));
+  const head=raw.slice(0, Math.max(0, raw.search(/\r?\n\r?\n/))).replace(/\r?\n[ \t]+/g,' ');
+  const hv=n=>{ const r=head.match(new RegExp('^'+n+':[ \\t]*(.*)$','im')); return r?r[1].trim():''; };
+  let tipo=hv('X-Ricevuta').toLowerCase();
+  if(!tipo) tipo=/MANCATA|ERRORE|NON\s+ACCETTAZIONE/i.test(x.nome+' '+m.oggetto)?'errore-consegna':(/CONSEGNA/i.test(x.nome+' '+m.oggetto)?'avvenuta-consegna':'');
+  const corpo=String(m.corpo||'').replace(/\r/g,'');
+  const dest=((corpo.match(/indirizzat[oa]\s+a\s+"([^"]+)"/i)||corpo.match(/destinatario\s*:?\s*"?([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i)||[])[1]||'').trim();
+  const g=corpo.match(/Il giorno\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  const data=g ? g[3]+'-'+g[2]+'-'+g[1] : (m.data||iso(new Date(x.mod)));
+  const err=((corpo.match(/errore\s*:?\s*([^\n]{3,120})/i)||[])[1]||'').replace(/\s+/g,' ').trim();
+  return {tipo, id:hv('X-Riferimento-Message-ID')||x.rel, oggetto:m.oggetto.replace(/^[^:]{0,60}:\s*/,''), data, dest, err, rel:x.rel, dir:x.rel.replace(/[^/]*$/,'')};
+}
+const descrMora=v=> v.esito==='non_consegnata' ? 'invio '+fmtData(v.data)+' NON RICEVUTO dal debitore: nessun termine, da reinviare'
+  : 'invio '+fmtData(v.data)+' · '+(v.giorni||'—')+' gg · termine '+fmtData(v.termine_data);
+async function controllaMora(p, files, rep){
+  const docx=files.filter(x=>/\.docx$/i.test(x.nome) && !/^~\$/.test(x.nome) && !/^(?:1-FATTURE|2-VISURE|3-ESTRATTO|4-PDR)/i.test(x.rel));
+  const ric=files.filter(x=>/\.eml$/i.test(x.nome) && RE_RICEVUTA_NOME.test(x.nome));
+  if(!docx.length && !ric.length) return;
+  const firma=docx.concat(ric).map(x=>x.rel+':'+x.mod).sort().join('|');
+  if(p.moraFirma===firma) return;
+  const lettere=[];
+  for(const x of docx){ try{ const l=await letteraMora(x); if(l) lettere.push(l); }catch(e){} }
+  const invii={};
+  for(const x of ric){
+    try{ const r=ricevutaPec(await x.f.arrayBuffer(), x);
+      if(/notificazione\s+ai\s+sensi|\bnotifica\b|decreto|precetto/i.test(r.oggetto)) continue;
+      const v=invii[r.id]||(invii[r.id]={id:r.id, oggetto:r.oggetto, dir:r.dir, consegne:[], errori:[]});
+      (r.tipo==='avvenuta-consegna'?v.consegne:r.tipo==='errore-consegna'||/errore|mancata/.test(r.tipo)?v.errori:[]).push(r);
+    }catch(e){ rep.errori.push(x.rel+': '+e.message); }
+  }
+  const elenco=Object.values(invii).filter(v=>v.consegne.length||v.errori.length).map(v=>{
+    v.consegnata=v.consegne.length>0;
+    v.data=(v.consegnata?v.consegne:v.errori).map(r=>r.data).sort()[0];
+    v.dest=Array.from(new Set((v.consegnata?v.consegne:v.errori).map(r=>r.dest).filter(Boolean)));
+    return v; }).sort((a,b)=>a.data.localeCompare(b.data));
+  lettere.sort((a,b)=>a.data.localeCompare(b.data) || a.rel.localeCompare(b.rel));
+  // abbina: dalla lettera più recente, l'invio entro 7 giorni prima / 20 dopo la data della lettera (prima quelli nella stessa sottocartella)
+  let L=null, V=null;
+  const usati=new Set();
+  for(let k=lettere.length-1;k>=0 && !V;k--){
+    const l=lettere[k], lo=addDays(l.data,-7), hi=addDays(l.data,20);
+    const cand=elenco.filter(v=>!usati.has(v) && v.data>=lo && v.data<=hi);
+    if(!cand.length){ if(k===lettere.length-1) rep.verifiche.push('Lettera di messa in mora del '+fmtData(l.data)+' ('+l.rel.replace(/\//g,' › ')+') senza ricevuta PEC di consegna: non ancora inviata, o inviata con altro mezzo?'); continue; }
+    const cons=cand.filter(v=>v.consegnata), stessa=a=>a.filter(v=>v.dir===l.dir);
+    V=(stessa(cons)[0]||cons[0]||stessa(cand).slice(-1)[0]||cand.slice(-1)[0]); L=l;
+  }
+  if(!V && elenco.length && !lettere.length) V=elenco[elenco.length-1];
+  if(!V){ p.moraFirma=firma; return; }
+  const m=p.fasi.mora, giorni=L?L.giorni:(+m.giorni||GIORNI_MORA_DEFAULT);
+  const ora={data:m.data||'', giorni:+m.giorni||'', termine_data:m.termine_data||'', esito:m.esito||''};
+  // destinatario diverso dalla PEC del debitore (anagrafica o lettera): la lettera non è arrivata al debitore
+  const pulisci=a=>String(a||'').toLowerCase().replace(/\s+/g,'');
+  const noti=Array.from(new Set([p.debitore.pec].concat(L?L.pec:[]).map(pulisci).filter(a=>/@/.test(a))));
+  const stesso=a=>{ a=pulisci(a); return noti.some(b=>a===b || a.endsWith(b) || b.endsWith(a)); };
+  const sbagliato=V.consegnata && noti.length>0 && V.dest.length>0 && !V.dest.some(stesso);
+  const nuovo=V.consegnata && !sbagliato ? {data:V.data, giorni, termine_data:addDays(V.data, giorni), esito:ora.esito==='non_consegnata'?'':ora.esito}
+                           : {data:V.data, giorni, termine_data:'', esito:'non_consegnata'};
+  if(sbagliato) rep.verifiche.push('ATTENZIONE: la PEC di messa in mora del '+fmtData(V.data)+' è stata consegnata a '+V.dest.join(', ')+
+    ', che non è la PEC del debitore ('+noti.join(', ')+'): per il debitore la lettera non è arrivata e il termine non decorre. Reinviarla all\'indirizzo giusto');
+  if(!V.consegnata){ const e=V.errori[0]; rep.verifiche.push('Messa in mora NON CONSEGNATA via PEC il '+fmtData(V.data)+(V.dest.length?' a '+V.dest.join(', '):'')+(e&&e.err?' ('+e.err+')':'')+': il termine non decorre, verificare l\'indirizzo e reinviare'); }
+  const uguale=ora.data===nuovo.data && +ora.giorni===+nuovo.giorni && (nuovo.esito==='non_consegnata' ? ora.esito==='non_consegnata' : ora.termine_data===nuovo.termine_data && ora.esito!=='non_consegnata');
+  if(uguale){ p.moraFirma=firma; return; }
+  const fonte=(L?'lettera del '+fmtData(L.data)+' ('+L.giorni+' giorni), ':'')+(sbagliato?'PEC consegnata il '+fmtData(V.data)+' a un indirizzo sbagliato':V.consegnata?'PEC consegnata il '+fmtData(V.data):'PEC non consegnata il '+fmtData(V.data))+(V.dest.length?' ('+V.dest.join(', ')+')':'');
+  rep.diff.push({k:'mora', lab:'Messa in mora — '+fonte, ora:ora.data||ora.termine_data?descrMora(ora):'non indicata', mail:descrMora(nuovo), valore:nuovo, sel:true});
+  rep.moraFirma=firma;
 }
 function applicaDatiMail(p, d, rep){
   const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec,
@@ -3170,7 +3253,7 @@ function renderEsitoCartelle(){
       (r.fatti.length?'<div class="okbox"><b>Aggiornato</b>'+li(r.fatti)+'</div>':'')+
       (r.verifiche.length?'<div class="verif"><b>Da verificare</b>'+li(r.verifiche)+'</div>':'')+
       (r.diff.length?'<div class="ag-diff"><b>Dati diversi da quelli del gestionale</b> — spunta quelli da sostituire:'+
-        r.diff.map((d,j)=>'<label class="ag-row"><input type="checkbox" data-diff="'+i+'|'+j+'"> <span><b>'+esc(d.lab)+'</b><br>'+
+        r.diff.map((d,j)=>'<label class="ag-row"><input type="checkbox" data-diff="'+i+'|'+j+'"'+(d.sel?' checked':'')+'> <span><b>'+esc(d.lab)+'</b><br>'+
           '<span class="ag-ora">gestionale: '+esc(d.ora)+'</span> → <span class="ag-new">cartella: '+esc(d.mail)+'</span></span></label>').join('')+'</div>':'')+
       (!r.primaVolta && r.nuovi.length?'<div class="ag-file"><b>📄 Nuovi documenti ('+r.nuovi.length+')</b>'+li(r.nuovi.map(x=>x.rel.replace(/\//g,' › ')))+'</div>':'')+
       (r.primaVolta?'<div class="desc">Prima lettura della cartella: '+r.totFile+(r.totFile===1?' documento registrato':' documenti registrati')+'. Dal prossimo «Aggiorna» verranno segnalati solo quelli nuovi.</div>':'')+
@@ -3206,9 +3289,12 @@ async function applicaCartelle(btn){
     const [i,j]=ch.dataset.diff.split('|').map(Number), r=e.risultati[i], d=r&&r.diff[j]; if(!d) return; const p=r.p;
     if(d.k==='importo') p.importo=d.valore;
     else if(d.k==='fatture'){ p.fatture=d.valore.map(f=>Object.assign({id:uid()}, f)); }
-    else if(d.k==='moraData'){ p.fasi.mora.data=d.valore; if(!p.fasi.mora.termine_manuale) p.fasi.mora.termine_data=termineMoraCalcolato(p); }
+    else if(d.k==='mora'){ const m=p.fasi.mora, v=d.valore;
+      m.data=v.data; m.giorni=v.giorni; m.esito=v.esito; m.termine_manuale=false; m.termine_data=v.esito==='non_consegnata'?'':termineMoraCalcolato(p);
+      p.eventi.push({data:oggi(), testo:'Messa in mora corretta dalle ricevute PEC nella cartella: '+descrMora(m)}); }
     else p.debitore[d.k]=d.valore;
     n++; });
+  e.risultati.forEach(r=>{ if(r.moraFirma) r.p.moraFirma=r.moraFirma; }); // proposta vista: non si ripropone finché i file non cambiano
   document.querySelectorAll('#modal [data-lega]').forEach(s=>{ if(!s.value) return; const p=getPos(s.dataset.lega), c=e.cartelle.find(x=>x.rel===s.value);
     if(p && c){ p.cartella=percorsoCartella(c); daAggiornare.push(p); } });
   const crea=[];
