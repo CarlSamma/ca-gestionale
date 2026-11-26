@@ -351,6 +351,8 @@ tbody td:first-child .bold{white-space:nowrap}
 .com-gmail{font-size:12px;color:var(--indigo)}
 .com-all{font-size:12px;color:var(--mut);margin-top:5px}
 /* v1.5 */
+.cod-ca{display:flex;flex-wrap:wrap;gap:3px}
+.cod-ca span{font-weight:750;font-size:13.5px;letter-spacing:.2px;color:var(--ink,#1d2433);background:#eef1f8;border-radius:5px;padding:1px 6px;white-space:nowrap}
 .tags-mora{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap}
 .tagm{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:5px;padding:1px 5px;font-size:11px;font-weight:650;cursor:pointer;line-height:1.5}
 .tagm:hover{border-color:var(--indigo);color:var(--indigo)}
@@ -389,7 +391,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.6</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.6.1</div>
     </div>
   </div>
   <div class="actions">
@@ -673,6 +675,22 @@ function normalizzaForma(v){
     ssd:'S.S.D.',ssdarl:'S.S.D.',societasportivadilettantistica:'S.S.D.',
     personafisica:'Persona fisica',privato:'Persona fisica'};
   return m[k] || v || '';
+}
+/* v1.6.1: codici cliente usati da Como Acqua (C702, BOT081, 013227000029…), dall'anagrafica
+   oppure, se mancano, dal nome della mail di CA nella cartella («Codice Cliente_ C702 - …», «DEBITORE 30200475 - …») */
+function codiciDaNomeMail(nome){
+  const n=String(nome||'').replace(/^.*\//,'').replace(/\.(msg|eml)$/i,'');
+  let m=n.match(/Codic[ei]\s+Client[ei][_:\s]*\s*(.+?)\s+-\s/i) || n.match(/\bDEBITORE\s+([A-Z]*\d[\w-]*)\s+-\s/i) || n.match(/Nuova\s+pratica\s+([A-Z]*\d[\w-]*)(?:\s+-\s+\d[\w-]*)?\s*$/i);
+  if(!m) return [];
+  return m[1].split(/\s+[_\/]\s+|\s*\/\s*|\s+-\s+|,\s*/).map(x=>x.trim()).filter(x=>/^[A-Z]*\d[A-Z0-9-]*$/i.test(x)&&x.length>=3);
+}
+function codiciCA(p){
+  const v=String((p.debitore&&p.debitore.codici)||'').split(/\s*[\/,;]\s*|\s+/).map(x=>x.trim()).filter(Boolean);
+  if(v.length) return Array.from(new Set(v));
+  const out=[];
+  Object.keys(p.cartellaIndice||{}).filter(r=>/^0-CORRISPONDENZA\/[^\/]+\.(msg|eml)$/i.test(r) && !/^0-CORRISPONDENZA\/(?:R|RE|I)[_:\s]/i.test(r))
+    .forEach(r=>codiciDaNomeMail(r).forEach(c=>{ if(out.indexOf(c)<0) out.push(c); }));
+  return out;
 }
 function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', importo:'', pagato:''}; }
 function nuovaPosizione(){
@@ -1582,7 +1600,7 @@ function posizioniVista(){
   });
   const k=filtri.ord, dir=filtri.dir;
   const chiave=p=>{
-    if(k==='codice') return p.codice||'';
+    if(k==='codice') return (codiciCA(p)[0]||'~')+'|'+(p.codice||'');
     if(k==='debitore') return (p.debitore.nome||'').toLowerCase();
     if(k==='importo') return dovuto(p);
     if(k==='fase') return p.fase;
@@ -1623,7 +1641,8 @@ function renderTable(){
       scadHtml='<div class="scad '+cls+'"><div class="d">'+lab+'</div><div class="t">'+esc(s.testo)+'</div></div>';
     }
     rows+='<tr data-act="apri" data-id="'+p.id+'">'+
-      '<td><div class="bold">'+esc(p.codice)+'</div><div class="sub">'+fmtData(p.apertura)+'</div></td>'+
+      '<td>'+(()=>{ const cc=codiciCA(p); return cc.length ? '<div class="cod-ca" title="Codice cliente Como Acqua">'+cc.map(c=>'<span>'+esc(c)+'</span>').join('')+'</div>'+
+        '<div class="sub">'+esc(p.codice)+' · '+fmtData(p.apertura)+'</div>' : '<div class="bold">'+esc(p.codice)+'</div><div class="sub">'+fmtData(p.apertura)+'</div>'; })()+'</td>'+
       '<td><div class="bold">'+esc(p.debitore.nome||'—')+'</div><div class="sub">'+esc([p.debitore.forma,p.debitore.sede].filter(Boolean).join(' · '))+'</div></td>'+
       '<td class="num bold">'+fmtEuro(dovuto(p))+(totali(p).daFatture?'<div class="sub">'+totali(p).n+' fatt.</div>':'')+'</td>'+
       '<td><span class="badge-fase '+(p.stato!=='attiva'?'done':'')+'">F'+F.n+' · '+esc(F.titolo)+'</span>'+
@@ -3250,6 +3269,7 @@ async function aggiornaPratica(p, c){
   try{ await controllaMora(p, files, rep); }catch(e){ rep.errori.push('Controllo della messa in mora non riuscito: '+e.message); }
   /* 4) indice dei file e documenti nuovi */
   const nuovo={}; files.forEach(x=>nuovo[x.rel]=x.mod); p.cartellaIndice=nuovo; p.cartellaLetta=new Date().toISOString();
+  if(!String(p.debitore.codici||'').trim()){ const cc=codiciCA(p); if(cc.length){ p.debitore.codici=cc.join(' / '); rep.fatti.push('Codici cliente (dal nome della mail di CA): '+cc.join(' / ')); } }
   if(rep.primaVolta){ p.eventi.push({data:oggi(), testo:'Cartella collegata al gestionale: '+c.rel+' ('+files.length+(files.length===1?' documento)':' documenti)')}); }
   else if(rep.nuovi.length){
     const nomi=rep.nuovi.map(x=>x.rel.replace(/\//g,' › '));
