@@ -1288,6 +1288,9 @@ function renderDetail(){
     (avanzabile
       ? '<button class="btn-primary" data-act="avanza" style="background:var(--indigo);color:#fff;border:0;border-radius:7px;padding:9px 16px;font-weight:700">'+btnAvanza+'</button>'
       : '<span style="font-size:12.5px;color:var(--mut)">'+(completata?'✓ Procedura completata: azione esecutiva registrata':'Posizione chiusa o sospesa')+'</span>')+
+    ((p.fase>1 || completata)
+      ? '<button class="btn-out" data-act="indietroFase" style="background:#fff;color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:9px 12px" title="Annulla la registrazione dell\'ultima fase (per correggere un errore)">↩ Annulla «'+esc(FASI[(completata?6:p.fase-1)-1].titolo)+'» completata</button>'
+      : '')+
     '<span class="grow"></span>'+
     '<button class="btn-dark" data-act="comDiPosizione" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)" title="Comunicazioni relative a questa posizione">💬 Comunicazioni</button>'+
     '<select class="stato-sel" data-path="stato">'+
@@ -1459,6 +1462,27 @@ function avanzaFase(p){
   if(p.fase<6) p.fase++;
   save(); renderAll();
   toast('Fase '+F.n+' registrata: '+F.titolo);
+}
+/* Riporta indietro di una fase (correzione di un «Registra e passa alla successiva» premuto per errore).
+   I dati inseriti nella fase (date, esito) restano; si tolgono solo la registrazione nello storico
+   e l'evento automatico. */
+function indietroFase(p){
+  const completata=faseCompletata(p);
+  const n = completata ? 6 : p.fase-1;
+  if(n<1) return;
+  const F=FASI[n-1];
+  if(!confirm('Riportare la posizione alla fase '+n+' «'+F.titolo+'»?\n\n'+
+    'La fase non risulterà più completata. I dati già inseriti (date, esito) restano e si possono correggere.')) return;
+  p.storico=p.storico.filter(s=>s.fase<n);
+  const testo={1:'Messa in mora inviata / esito registrato',2:'Deposito del ricorso per ingiunzione',
+    3:'Decreto ingiuntivo emesso',4:'Notifica del decreto ingiuntivo',
+    5:'Notifica del precetto',6:'Azione esecutiva avviata'}[n];
+  const i=p.eventi.map(e=>e.testo).lastIndexOf(testo);
+  if(i>=0) p.eventi.splice(i,1);
+  p.eventi.push({data:oggi(), testo:'Annullata la registrazione della fase '+n+' «'+F.titolo+'» (correzione)'});
+  p.fase=n;
+  save(); renderAll();
+  toast('Posizione riportata alla fase '+n+': '+F.titolo);
 }
 function nuova(){ const p=nuovaPosizione(); db.posizioni.unshift(p); save(); renderAll(); apri(p.id);
   setTimeout(()=>{ const el=$('#panel [data-path="debitore.nome"]'); if(el) el.focus(); },60); }
@@ -2072,6 +2096,7 @@ document.addEventListener('click', e=>{
     renderTable(); return; }
   if(act==='fase'){ filtri.fase=+t.dataset.f; renderChips(); renderTable(); return; }
   if(act==='avanza'){ const p=getPos(openId); if(p) avanzaFase(p); return; }
+  if(act==='indietroFase'){ const p=getPos(openId); if(p) indietroFase(p); return; }
   if(act==='elimina'){ if(openId) elimina(openId); return; }
   if(act==='vaiFase'){ const el=$('#fase-'+t.dataset.key); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
   if(act==='addEvento'){
