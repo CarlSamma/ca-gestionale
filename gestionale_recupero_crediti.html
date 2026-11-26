@@ -2737,10 +2737,10 @@ async function elencoCartelle(){
   const out=[];
   for await (const [nome,h] of posHandle.entries()){
     if(h.kind!=='directory') continue;
-    if(/^#.*#$/.test(nome)){ // raggruppamenti: #CON DECRETI EMESSI#, #CONCORSUALE#, #DEFINITI-ARCHIVIATO#…
-      if(/MODELLI/i.test(nome)) continue;
-      for await (const [n2,h2] of h.entries()) if(h2.kind==='directory') out.push({rel:nome+'\\'+n2, nome:n2, categoria:nome, h:h2});
-    } else out.push({rel:nome, nome, categoria:'', h});
+    // solo le posizioni direttamente in POSIZIONI: le cartelle #…# (#CON DECRETI EMESSI#, #CONCORSUALE#,
+    // #DEFINITI-ARCHIVIATO#, #MODELLI#) non vengono lette né proposte come nuove posizioni
+    if(/^#/.test(nome)) continue;
+    out.push({rel:nome, nome, categoria:'', h});
   }
   return out.sort((a,b)=>a.rel.localeCompare(b.rel,'it'));
 }
@@ -3125,8 +3125,9 @@ async function aggiornaCartelle(soloId){
   const usate=new Map(); // rel -> id posizione
   db.posizioni.forEach(p=>{ const r=relDaPercorso(p.cartella); if(r) usate.set(r, p.id); });
   const lista=soloId ? db.posizioni.filter(p=>p.id===soloId) : db.posizioni.filter(p=>p.codice!=='CA-ES000');
-  const esito={risultati:[], senza:[], nuove:[], cartelle, solo:soloId||null};
+  const esito={risultati:[], senza:[], nuove:[], cartelle, solo:soloId||null, saltate:0};
   for(const p of lista){
+    if(/^#/.test(relDaPercorso(p.cartella))){ esito.saltate++; continue; } // cartella in #CON DECRETI EMESSI#, #CONCORSUALE#…: non si legge
     const ab=cartellaDi(p, cartelle, usate);
     if(!ab){ esito.senza.push(p); continue; }
     usate.set(ab.c.rel, p.id);
@@ -3172,6 +3173,7 @@ function renderEsitoCartelle(){
   }
   if(!h) h='<div class="okbox">✓ Nessuna novità nelle cartelle'+(e.risultati.length?' ('+e.risultati.length+(e.risultati.length===1?' posizione controllata)':' posizioni controllate)'):'')+'.</div>';
   else if(senzaNovita) h+='<div class="desc">Altre '+senzaNovita+' posizioni controllate: nessuna novità.</div>';
+  if(e.saltate) h+='<div class="desc">'+e.saltate+(e.saltate===1?' posizione ha':' posizioni hanno')+' la cartella in un raggruppamento #…# (decreti emessi, concorsuale, archiviato): non '+(e.saltate===1?'è stata letta':'sono state lette')+'.</div>';
   const azioni=e.risultati.some(r=>r.diff.length) || e.senza.length || e.nuove.length;
   $('#modal').innerHTML='<div class="box ag-box"><div class="mh"><h2>🔄 Aggiorna dalle cartelle</h2><button class="p-close" data-act="chiudiModal">✕</button></div>'+
     '<div class="mb">'+h+'</div><div class="mf"><button class="btn-out" data-act="chiudiModal">Chiudi</button>'+
