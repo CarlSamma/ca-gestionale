@@ -351,6 +351,15 @@ tbody td:first-child .bold{white-space:nowrap}
 .com-gmail{font-size:12px;color:var(--indigo)}
 .com-all{font-size:12px;color:var(--mut);margin-top:5px}
 /* v1.5 */
+.tags-mora{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap}
+.tagm{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:5px;padding:1px 5px;font-size:11px;font-weight:650;cursor:pointer;line-height:1.5}
+.tagm:hover{border-color:var(--indigo);color:var(--indigo)}
+.tagm.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.rap-lista{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;padding:4px 8px;margin:6px 0 10px}
+.rap-lista label{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px solid #f0f2f7;font-size:13px}
+.rap-lista label:last-child{border-bottom:0}
+.rap-testo{width:100%;min-height:340px;font:13px/1.5 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff;color:var(--ink,#1d2433);box-sizing:border-box}
+@media print{.tags-mora .tagm:not(.on){display:none}}
 .attesa-sel{border:1px solid var(--line);border-radius:7px;padding:5px 6px;font-size:12.5px;font-weight:600;background:#fff;color:var(--mut);max-width:190px}
 .attesa-sel.att-ca{background:var(--amber-l);color:var(--amber);border-color:#f0d9b0}
 .attesa-sel.att-sb{background:var(--indigo-l);color:var(--indigo);border-color:#c9d2f3}
@@ -380,7 +389,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5.2</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.6</div>
     </div>
   </div>
   <div class="actions">
@@ -434,6 +443,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <option value="">Nessuna attesa indicata</option>
   </select>
   <button class="btn-add" data-act="aggiornaCartelle" title="Legge le cartelle dei debitori: mail di CA, estratto conto, documenti nuovi">🔄 Aggiorna dalle cartelle</button>
+  <button class="btn-add" data-act="rapporto" title="Breve aggiornamento con le attività più recenti di una o più pratiche">📝 Genera rapporto</button>
   <span id="infoCartelle" class="desc" style="margin:0"></span>
 </section>
 
@@ -541,7 +551,10 @@ const STATI = [
 ];
 const ESITO_MORA = [['','— in attesa —'],['silenzio','Nessun riscontro (silenzio)'],
   ['riscontro','Riscontro del debitore'],['pagamento','Pagamento integrale'],
-  ['pagamento_p','Pagamento parziale / trattativa'],['non_consegnata','PEC non consegnata — da reinviare']];
+  ['pagamento_p','Pagamento parziale / trattativa'],['non_consegnata','PEC non consegnata']];
+/* v1.6: mezzo di invio della messa in mora (tag nella colonna Fase per le pratiche in F1) */
+const MEZZI_MORA = [['pec','pec'],['racc','racc'],['pec+racc','pec+racc']];
+const MEZZI_MORA_EST = [['','—'],['pec','PEC'],['racc','Raccomandata A/R'],['pec+racc','PEC + raccomandata A/R']];
 const ESITO_NOTIFICA = [['','—'],['Eseguita','Eseguita'],['Negativa — irreperibile','Negativa — irreperibile'],
   ['Negativa — PEC non consegnata','Negativa — PEC non consegnata']];
 const OPPOSIZIONE = [['','— in attesa —'],['nessuna','Nessuna (termine decorso)'],
@@ -669,7 +682,7 @@ function nuovaPosizione(){
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
     fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
-      mora:{data:'', giorni:GIORNI_MORA_DEFAULT, termine_data:'', termine_manuale:false, esito:''},
+      mora:{data:'', giorni:GIORNI_MORA_DEFAULT, termine_data:'', termine_manuale:false, esito:'', mezzo:''},
       ricorso:{data:'', rg:'', autorita:'Tribunale di Como'},
       decreto:{data:'', numero:'', imm_esecutivo:false, termine_opposizione:40, notifica_estero:false},
       notifica:{data:'', esito:'', opposizione:'', data_opposizione:''},
@@ -723,7 +736,7 @@ function dividiSede(v){
   m=t.match(/^((?:via|viale|v\.le|piazza|p\.za|piazzale|piazzetta|corso|c\.so|largo|strada|str\.|località|loc\.|vicolo|contrada)\b[^,]+),\s*([^,–—\d]+)$/i);
   return m ? {via:m[1].trim(), cap:'', comune:m[2].trim()} : null;
 }
-function termineMoraCalcolato(p){ const m=p.fasi.mora; return m.data ? addDays(m.data, +m.giorni||GIORNI_MORA_DEFAULT) : ''; }
+function termineMoraCalcolato(p){ const m=p.fasi.mora; return m.data && m.esito!=='non_consegnata' ? addDays(m.data, +m.giorni||GIORNI_MORA_DEFAULT) : ''; } // PEC non consegnata: nessun termine
 /* totali del credito: se ci sono fatture l'importo dovuto è il residuo calcolato, altrimenti l'importo inserito a mano */
 function totali(p){
   const ff=(p&&p.fatture)||[];
@@ -1613,7 +1626,8 @@ function renderTable(){
       '<td><div class="bold">'+esc(p.codice)+'</div><div class="sub">'+fmtData(p.apertura)+'</div></td>'+
       '<td><div class="bold">'+esc(p.debitore.nome||'—')+'</div><div class="sub">'+esc([p.debitore.forma,p.debitore.sede].filter(Boolean).join(' · '))+'</div></td>'+
       '<td class="num bold">'+fmtEuro(dovuto(p))+(totali(p).daFatture?'<div class="sub">'+totali(p).n+' fatt.</div>':'')+'</td>'+
-      '<td><span class="badge-fase '+(p.stato!=='attiva'?'done':'')+'">F'+F.n+' · '+esc(F.titolo)+'</span></td>'+
+      '<td><span class="badge-fase '+(p.stato!=='attiva'?'done':'')+'">F'+F.n+' · '+esc(F.titolo)+'</span>'+
+        (p.fase===1 ? '<div class="tags-mora">'+MEZZI_MORA.map(m=>'<button class="tagm'+((p.fasi.mora.mezzo||'')===m[0]?' on':'')+'" data-act="mezzo" data-id="'+p.id+'" data-v="'+m[0]+'" title="Messa in mora inviata via '+esc((MEZZI_MORA_EST.find(x=>x[0]===m[0])||['',''])[1])+'">['+m[1]+']</button>').join('')+'</div>' : '')+'</td>'+
       '<td>'+fmtData(dataFase)+'</td>'+
       '<td>'+scadHtml+'</td>'+
       '<td class="notecell" data-act="note" data-id="'+p.id+'">'+cellaNote(p)+'</td>'+
@@ -1671,7 +1685,8 @@ function bloccoFase(p,i){
     h+=campo(p,'fasi.mora.data','Data invio','date')+
        campo(p,'fasi.mora.giorni','Giorni per adempiere','number','step="1" min="1"')+
        campo(p,'fasi.mora.termine_data','Termine di adempimento','date')+
-       menuSel(p,'fasi.mora.esito','Esito (riscontro / silenzio)',ESITO_MORA);
+       menuSel(p,'fasi.mora.mezzo','Mezzo di invio',MEZZI_MORA_EST)+
+       menuSel(p,'fasi.mora.esito','Esito (riscontro / silenzio / PEC non consegnata)',ESITO_MORA);
     h+='</div><div class="desc" id="moraInfo" style="margin:8px 0 0">'+moraInfoHtml(p)+'</div>'+
        '<div class="add-ev"><button class="btn-ind" data-act="generaMora">📄 Genera lettera di messa in mora</button></div><div>';
   }else if(F.key==='ricorso'){
@@ -1702,6 +1717,7 @@ function bloccoFase(p,i){
 function moraInfoHtml(p){
   const m=p.fasi.mora, calc=termineMoraCalcolato(p);
   if(!m.data) return 'Inserendo la data di invio il termine viene calcolato automaticamente (data invio + giorni per adempiere).';
+  if(m.esito==='non_consegnata') return '⚠ PEC non consegnata: nessun termine finché la messa in mora non viene reinviata (inserire la nuova data di invio e togliere l\'esito).';
   if(m.termine_manuale && m.termine_data!==calc)
     return '✎ Termine inserito manualmente (calcolato: '+fmtData(calc)+') <button class="mini" data-act="ricalcolaMora">↺ ricalcola</button>';
   return '⚙ Termine calcolato automaticamente: invio + '+(+m.giorni||GIORNI_MORA_DEFAULT)+' gg.';
@@ -1833,6 +1849,7 @@ function renderDetail(){
       (IN_ARTEFATTO?'':'<button class="btn-ind" data-act="aggiornaPratica" title="Legge la cartella della pratica: mail di CA, estratto conto, documenti nuovi">🔄 Aggiorna dalla cartella</button>')+
       '<button class="btn-dark" data-act="apriCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📂 Apri cartella</button>'+
       '<button class="btn-dark" data-act="copiaCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📋 Copia percorso</button>'+
+      '<button class="btn-dark" data-act="rapporto" data-id="'+p.id+'" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📝 Rapporto</button>'+
     '</div></div>'+
 
     fasi+
@@ -2290,6 +2307,18 @@ const SEGNAPOSTO = {
   FORMA:['forma giuridica', v=>v.forma], GIORNI:['giorni per adempiere', v=>String(v.giorni)],
   FATTURE:['elenco delle fatture insolute', v=>v.fatture], CAUSA:['causa del credito (PDR o fatture)', v=>v.causaFrase]
 };
+/* numeri da 1 a 99 in lettere (per «termine di 7 (sette) giorni») */
+function numeroInLettere(n){
+  n=Math.floor(+n);
+  const u=['zero','uno','due','tre','quattro','cinque','sei','sette','otto','nove','dieci','undici','dodici','tredici','quattordici','quindici','sedici','diciassette','diciotto','diciannove'];
+  const d=['','','venti','trenta','quaranta','cinquanta','sessanta','settanta','ottanta','novanta'];
+  if(!(n>=0)) return '';
+  if(n<20) return u[n];
+  if(n>99) return String(n);
+  const dec=d[Math.floor(n/10)], un=n%10;
+  if(!un) return dec;
+  return (un===1||un===8 ? dec.slice(0,-1) : dec)+(un===3?'tré':u[un]);
+}
 function chiaveSegnaposto(raw){
   return raw.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 }
@@ -2365,6 +2394,9 @@ function compilaXml(xml, v, rep){
       sostituisci(p, /\d{1,2}\/\d{1,2}\/\d{4}/g, ()=>({testo:v.data}));
     // causa del credito: pratiche senza piano di rientro
     if(v.causa==='fatture' && testo.indexOf(FRASE_PDR)>=0){ sostituisci(p, new RegExp(FRASE_PDR.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'), ()=>({testo:FRASE_FATTURE})); rep.causa=true; }
+    // termine per adempiere scritto nel modello («termine di 10 (dieci) giorni»): si usa quello della pratica
+    sostituisci(p, /(termine\s+di\s+)(\d{1,2})(\s*)(\(\s*[a-zà-ù]+\s*\))?(\s*giorni)/gi, m=>{
+      rep.giorni=true; return {testo:m[1]+v.giorni+(m[4]?m[3]+'('+numeroInLettere(v.giorni)+')':'')+m[5]}; });
     // segnaposto tra graffe
     sostituisci(p, /\{([^{}]{1,40})\}/g, m=>{
       const raw=m[1], k=chiaveSegnaposto(raw);
@@ -2629,6 +2661,7 @@ function apriGeneraMora(){
     campoM('gm-cap','CAP',v.cap,'maxlength="5"')+
     campoM('gm-comune','Comune (prov.)',v.comune)+
     campoM('gm-debito','Importo dovuto (€)',v.debito)+
+    campoM('gm-giorni','Giorni per adempiere',v.giorni,'type="number" min="1" max="99" step="1"')+
     campoM('gm-spese','Interessi e spese legali (€)','','placeholder="vuoto = [……..] in giallo"')+
   '</div>'+
   '<div class="field"><span>Causa del credito</span><div class="radio-row">'+
@@ -2649,11 +2682,12 @@ async function eseguiGeneraMora(btn){
   const m=(modelli||[]).find(x=>x.id===$('#gm-modello').value); if(!m) return;
   const g=id=>$('#'+id).value.trim();
   const v=Object.assign(valoriLettera(p), {data:g('gm-data'), debitore:g('gm-debitore'), pec:g('gm-pec'), via:g('gm-via'),
-    cap:g('gm-cap'), comune:g('gm-comune'), debito:g('gm-debito'), spese:g('gm-spese'),
+    cap:g('gm-cap'), comune:g('gm-comune'), debito:g('gm-debito'), spese:g('gm-spese'), giorni:+g('gm-giorni')||0,
     causa:(document.querySelector('input[name="gm-causa"]:checked')||{}).value||'fatture'});
   v.causaFrase = v.causa==='fatture' ? FRASE_FATTURE : FRASE_PDR;
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v.data)){ avviso('Data della lettera nel formato gg/mm/aaaa.'); return; }
   if(!v.debitore || !v.debito){ avviso('Debitore e importo sono obbligatori.'); return; }
+  if(!(v.giorni>=1 && v.giorni<=99)){ avviso('Giorni per adempiere: un numero da 1 a 99.'); return; }
   const etichetta=btn.textContent;
   btn.disabled=true; btn.textContent='Generazione…';
   const inCartella=!!($('#gm-cartella') && $('#gm-cartella').checked);
@@ -2667,6 +2701,7 @@ async function eseguiGeneraMora(btn){
     const testo=rep.testo||'';
     if(testo.toLowerCase().indexOf(v.debitore.toLowerCase())<0) verif.push('Il nome del debitore non compare nella lettera: controllare i segnaposto del modello.');
     if(testo.indexOf(v.debito)<0) verif.push('L\'importo non compare nella lettera: controllare i segnaposto del modello.');
+    if(!rep.giorni && !rep.usati.has('GIORNI')) verif.push('Nel modello non ho trovato «termine di … giorni»: controllare a mano che la lettera indichi '+v.giorni+' ('+numeroInLettere(v.giorni)+') giorni.');
     const nomeFile='messa in mora_'+v.debitore.replace(/[<>:"/\\|?*]/g,'_').trim().replace(/[.\s]+$/,'')+'.docx';
     let salvato=null;
     if(inCartella){
@@ -2682,6 +2717,7 @@ async function eseguiGeneraMora(btn){
     if($('#gm-anagrafica').checked){
       Object.assign(p.debitore,{nome:v.debitore, pec:v.pec, indirizzo:v.via, cap:v.cap, sede:v.comune});
     }
+    if(+p.fasi.mora.giorni!==v.giorni){ p.fasi.mora.giorni=v.giorni; if(!p.fasi.mora.termine_manuale) p.fasi.mora.termine_data=termineMoraCalcolato(p); }
     p.eventi.push({data:oggi(), testo:'Lettera di messa in mora generata ('+(salvato||nomeFile)+', modello «'+m.nome+'»): da verificare e inviare'});
     save(); renderAll();
     $('#gm-esito').innerHTML='<div class="okbox">✓ Lettera generata'+(salvato?' e salvata in <b>'+esc(basePosizioni()+'\\'+salvato)+'</b>':': <b>'+esc(nomeFile)+'</b>')+'. Registrata negli eventi della posizione.'+
@@ -2692,6 +2728,115 @@ async function eseguiGeneraMora(btn){
   }catch(e){
     avviso('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent=etichetta;
   }
+}
+/* ================================================================
+   v1.6 — GENERA RAPPORTO: breve aggiornamento su una o più pratiche
+   (attività più recenti dagli eventi e dalle comunicazioni, stato della fase, prossima scadenza)
+   ================================================================ */
+const RAP_PERIODI=[['7','ultimi 7 giorni'],['15','ultimi 15 giorni'],['30','ultimi 30 giorni'],['90','ultimi 3 mesi'],['0','tutta la pratica']];
+let rapportoTesto='';
+/* eventi tecnici del gestionale: non interessano a chi legge il rapporto */
+const RE_EVENTO_INTERNO=/^(?:Cartella collegata al gestionale|Nuovi documenti nella cartella|Lettera di messa in mora generata|Annullata la registrazione|Messa in mora corretta dalle ricevute)/i;
+function apriRapporto(idSel){
+  const lista=(idSel?[]:posizioniVista()).concat(db.posizioni.filter(p=>idSel && p.id===idSel));
+  const altre=idSel ? db.posizioni.filter(p=>p.id!==idSel) : db.posizioni.filter(p=>lista.indexOf(p)<0);
+  const riga=(p,on)=>'<label><input type="checkbox" data-rap="'+p.id+'"'+(on?' checked':'')+'> <span><b>'+esc(p.codice)+'</b> · '+esc(p.debitore.nome||'—')+
+    ' <span class="sub">F'+p.fase+(p.stato!=='attiva'?' · '+esc(p.stato):'')+'</span></span></label>';
+  $('#modal').innerHTML='<div class="box"><div class="mh"><h2>📝 Genera rapporto</h2><button class="p-close" data-act="chiudiModal">✕</button></div>'+
+    '<div class="mb"><div class="desc" style="margin-top:0">Scegli le pratiche: il gestionale prepara un breve aggiornamento con le attività più recenti, lo stato di ogni pratica e il prossimo passo. Il testo si può correggere prima di copiarlo o scaricarlo in Word.</div>'+
+    '<div class="add-ev" style="margin:4px 0;align-items:center"><button class="mini" data-act="rapTutte">Seleziona tutte</button><button class="mini" data-act="rapNessuna">Nessuna</button>'+
+      '<span class="grow"></span><label class="field" style="margin:0;min-width:200px"><span>Attività del periodo</span><select id="rap-periodo">'+
+      RAP_PERIODI.map(o=>'<option value="'+o[0]+'"'+(o[0]==='30'?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label></div>'+
+    '<div class="rap-lista">'+lista.map(p=>riga(p,p.codice!=='CA-ES000')).join('')+altre.map(p=>riga(p,false)).join('')+'</div>'+
+    '<label class="check" style="padding-top:0"><input type="checkbox" id="rap-note"> Includi le note interne</label>'+
+    '<div id="rap-out"></div></div>'+
+    '<div class="mf"><button class="btn-out" data-act="chiudiModal">Chiudi</button><button class="btn-ind" data-act="rapGenera">Genera rapporto</button></div></div>';
+  $('#modal').classList.remove('hidden');
+}
+function attivitaPratica(p, dal){
+  const ev=(p.eventi||[]).filter(e=>e.data && !RE_EVENTO_INTERNO.test(e.testo||'')).map(e=>({data:e.data, testo:e.testo}));
+  const com=(db.comunicazioni||[]).filter(c=>c.posizione===p.id && c.data).map(c=>({data:c.data,
+    testo:(c.tipo==='cliente'?'Comunicazione con Como Acqua':c.tipo==='controparte'?'Comunicazione con il debitore':'Comunicazione')+
+      (c.canale?' ('+c.canale+')':'')+(c.oggetto?': '+c.oggetto:'')}));
+  const tutte=ev.concat(com).sort((a,b)=>b.data.localeCompare(a.data));
+  // la stessa attività può essere sia evento sia comunicazione (es. mail di CA): si tiene una volta
+  const viste=new Set(), uniche=tutte.filter(a=>{ const k=a.data+'|'+norm(a.testo).slice(0,40); if(viste.has(k)) return false; viste.add(k); return true; });
+  return {periodo:uniche.filter(a=>!dal || a.data>=dal), ultima:uniche[0]||null};
+}
+function statoMoraTesto(p){
+  const m=p.fasi.mora||{}, mezzo=(MEZZI_MORA_EST.find(x=>x[0]===(m.mezzo||''))||['',''])[1];
+  if(m.esito==='non_consegnata') return 'messa in mora del '+fmtData(m.data)+' non consegnata via PEC: da reinviare';
+  if(!m.data) return 'messa in mora da inviare';
+  let t='messa in mora inviata il '+fmtData(m.data)+(mezzo&&mezzo!=='—'?' via '+mezzo:'')+', termine di '+(m.giorni||GIORNI_MORA_DEFAULT)+' giorni'+(m.termine_data?' al '+fmtData(m.termine_data):'');
+  const es=(ESITO_MORA.find(x=>x[0]===(m.esito||''))||['',''])[1];
+  if(m.esito) t+=' — esito: '+es.toLowerCase();
+  else if(m.termine_data) t+=giorniDa(m.termine_data)<0?' — termine decorso senza riscontro':' — in attesa';
+  return t;
+}
+function testoRapporto(ps, giorni, conNote){
+  const dal=giorni ? addDays(oggi(), -giorni) : '';
+  const L=[];
+  L.push('AGGIORNAMENTO PRATICHE DI RECUPERO CREDITI');
+  L.push('Cliente: '+(ps[0]&&ps[0].cliente&&ps[0].cliente!=='CA'?ps[0].cliente:'Como Acqua s.r.l.')+' — situazione al '+fmtData(oggi())+(dal?' (attività dal '+fmtData(dal)+')':''));
+  L.push('');
+  ps.forEach((p,i)=>{
+    const F=FASI[p.fase-1]||FASI[0], att=(ATTESE.find(a=>a[0]===(p.attesa||''))||['',''])[1];
+    L.push('■ '+p.codice+' — '+(p.debitore.nome||'—'));
+    const cod=[p.debitore.codici, p.debitore.piva?'P.IVA '+p.debitore.piva:''].filter(Boolean).join(' · ');
+    if(cod) L.push('   '+cod);
+    L.push('   Credito: '+fmtEuro(dovuto(p))+(totali(p).daFatture?' ('+totali(p).n+' fatture)':'')+' · Fase: '+F.n+' – '+F.titolo+
+      (p.stato!=='attiva'?' · '+(STATI.find(s=>s[0]===p.stato)||['',p.stato])[1]:'')+(p.attesa?' · '+att:''));
+    if(p.fase===1 || (p.fasi.mora&&p.fasi.mora.data)) L.push('   Stato: '+statoMoraTesto(p));
+    const a=attivitaPratica(p, dal);
+    if(a.periodo.length){
+      L.push('   Attività recenti:');
+      a.periodo.slice(0,6).forEach(x=>L.push('   – '+fmtData(x.data)+': '+String(x.testo).replace(/\s+/g,' ').slice(0,220)));
+      if(a.periodo.length>6) L.push('   – … e altre '+(a.periodo.length-6)+' attività');
+    } else L.push('   Attività recenti: nessuna nel periodo'+(a.ultima?' (ultima il '+fmtData(a.ultima.data)+': '+String(a.ultima.testo).replace(/\s+/g,' ').slice(0,160)+')':''));
+    const s=prossimaScadenza(p);
+    if(s) L.push('   Prossimo passo: '+fmtData(s.data)+' — '+s.testo);
+    if(conNote){
+      const n=(p.annotazioni||[]).filter(x=>!x.fatta).map(x=>(x.data?fmtData(x.data)+': ':'')+x.testo);
+      if(p.note) n.unshift(p.note);
+      if(n.length) L.push('   Note: '+n.join(' · ').replace(/\s+/g,' ').slice(0,400));
+    }
+    if(i<ps.length-1) L.push('');
+  });
+  return L.join('\n');
+}
+function generaRapporto(){
+  const ids=Array.from(document.querySelectorAll('#modal [data-rap]')).filter(c=>c.checked).map(c=>c.dataset.rap);
+  if(!ids.length){ avviso('Seleziona almeno una pratica.'); return; }
+  const ps=ids.map(getPos).filter(Boolean);
+  rapportoTesto=testoRapporto(ps, +$('#rap-periodo').value, $('#rap-note').checked);
+  $('#rap-out').innerHTML='<textarea class="rap-testo" id="rap-testo" spellcheck="false">'+esc(rapportoTesto)+'</textarea>'+
+    '<div class="add-ev"><button class="btn-ind" data-act="rapCopia">📋 Copia il testo</button><button class="btn-out" data-act="rapWord">⬇ Scarica in Word</button>'+
+    '<span class="desc" style="margin:0">'+ps.length+(ps.length===1?' pratica':' pratiche')+'</span></div>';
+  $('#rap-testo').scrollIntoView({block:'nearest'});
+}
+function copiaRapporto(btn){
+  const t=$('#rap-testo').value, ok=()=>{ btn.textContent='✓ Copiato'; setTimeout(()=>btn.textContent='📋 Copia il testo',1800); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok).catch(()=>{ $('#rap-testo').select(); document.execCommand('copy'); ok(); });
+  else { $('#rap-testo').select(); document.execCommand('copy'); ok(); }
+}
+/* documento Word minimo (un paragrafo per riga; titoli e intestazioni delle pratiche in grassetto) */
+async function scaricaRapportoWord(){
+  const x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const righe=$('#rap-testo').value.split('\n');
+  const par=righe.map((r,i)=>{
+    const tit=i===0, pr=/^■/.test(r), rientro=/^\s{2,}/.test(r);
+    const testo=r.replace(/^■\s*/,'').replace(/^\s+/,'');
+    const rpr='<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>'+(tit||pr?'<w:b/>':'')+'<w:sz w:val="'+(tit?26:21)+'"/></w:rPr>';
+    return '<w:p><w:pPr><w:spacing w:after="'+(testo?40:120)+'"/>'+(rientro?'<w:ind w:left="284"/>':'')+'</w:pPr>'+(testo?'<w:r>'+rpr+'<w:t xml:space="preserve">'+x(testo)+'</w:t></w:r>':'')+'</w:p>';
+  }).join('');
+  const enc=s=>new TextEncoder().encode(s);
+  const doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="'+W_NS+'"><w:body>'+par+
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  const blob=await zipScrivi([
+    {name:'[Content_Types].xml', data:enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')},
+    {name:'_rels/.rels', data:enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')},
+    {name:'word/document.xml', data:enc(doc)}]);
+  if(await salvaFile('rapporto pratiche CA_'+oggi()+'.docx', blob)) toast('Rapporto scaricato');
 }
 function chiudiModal(){ $('#modal').classList.add('hidden'); $('#modal').innerHTML=''; }
 
@@ -3290,7 +3435,7 @@ async function applicaCartelle(btn){
     if(d.k==='importo') p.importo=d.valore;
     else if(d.k==='fatture'){ p.fatture=d.valore.map(f=>Object.assign({id:uid()}, f)); }
     else if(d.k==='mora'){ const m=p.fasi.mora, v=d.valore;
-      m.data=v.data; m.giorni=v.giorni; m.esito=v.esito; m.termine_manuale=false; m.termine_data=v.esito==='non_consegnata'?'':termineMoraCalcolato(p);
+      m.data=v.data; m.giorni=v.giorni; m.esito=v.esito; m.termine_manuale=false; if(!m.mezzo) m.mezzo='pec'; m.termine_data=v.esito==='non_consegnata'?'':termineMoraCalcolato(p);
       p.eventi.push({data:oggi(), testo:'Messa in mora corretta dalle ricevute PEC nella cartella: '+descrMora(m)}); }
     else p.debitore[d.k]=d.valore;
     n++; });
@@ -3368,6 +3513,14 @@ document.addEventListener('click', e=>{
   if(act==='chiudiModal'){ chiudiModal(); return; }
   /* v1.5: cartelle delle posizioni e stato */
   if(act==='attesa') return; // menu a tendina nella riga: non apre la scheda
+  /* v1.6: tag del mezzo di invio della messa in mora e rapporto */
+  if(act==='mezzo'){ const p=getPos(t.dataset.id); if(!p) return; const m=p.fasi.mora;
+    m.mezzo = m.mezzo===t.dataset.v ? '' : t.dataset.v; save(); renderTable(); if(openId===p.id) renderDetail(); return; }
+  if(act==='rapporto'){ apriRapporto(t.dataset.id||null); return; }
+  if(act==='rapTutte'||act==='rapNessuna'){ document.querySelectorAll('#modal [data-rap]').forEach(c=>c.checked=act==='rapTutte'); return; }
+  if(act==='rapGenera'){ generaRapporto(); return; }
+  if(act==='rapCopia'){ copiaRapporto(t); return; }
+  if(act==='rapWord'){ scaricaRapportoWord(); return; }
   if(act==='aggiornaCartelle'){ aggiornaCartelle(); return; }
   if(act==='aggiornaPratica'){ if(openId) aggiornaCartelle(openId); return; }
   if(act==='applicaCartelle'){ applicaCartelle(t); return; }
@@ -3499,7 +3652,7 @@ document.addEventListener('input', e=>{
   setPath(p, path, v);
   // messa in mora: termine = data invio + giorni, salvo termine inserito a mano
   const m=p.fasi.mora;
-  if(path==='fasi.mora.data' || path==='fasi.mora.giorni'){
+  if(path==='fasi.mora.data' || path==='fasi.mora.giorni' || path==='fasi.mora.esito'){
     if(!m.termine_manuale){
       m.termine_data=termineMoraCalcolato(p);
       const tEl=$('#panel [data-path="fasi.mora.termine_data"]'); if(tEl) tEl.value=m.termine_data;
