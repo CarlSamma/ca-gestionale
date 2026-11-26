@@ -4,3 +4,8 @@ gestionale_ca*.json.md
 
 # Versioni precedenti dell'app conservate in locale
 gestionale_recupero_crediti_old_*.html
+
+# Modelli Word dello Studio e dati delle pratiche: restano solo in locale
+skills/*/template/
+skills/*/esempi/
+__pycache__/

@@ -75,7 +75,7 @@ input,select,textarea{font:inherit;color:inherit}
 /* ---------- table ---------- */
 .tblwrap{margin:6px 18px 18px;background:var(--card);border:1px solid var(--line);
   border-radius:11px;box-shadow:var(--shadow);overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:960px}
+table{width:100%;border-collapse:collapse;min-width:1120px}
 thead th{position:sticky;top:0;background:#f7f9fc;text-align:left;font-size:11.5px;
   text-transform:uppercase;letter-spacing:.5px;color:var(--mut);padding:10px 12px;
   border-bottom:2px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
@@ -243,6 +243,63 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);
   color:#fff;border-radius:8px;padding:10px 16px;font-size:13.5px;z-index:99;box-shadow:var(--shadow)}
 
+/* ---------- v1.4: note in tabella ---------- */
+td.notecell{min-width:190px;max-width:280px}
+tbody td:first-child .bold{white-space:nowrap}
+.nt{display:flex;gap:6px;align-items:baseline;font-size:12.5px;line-height:1.3;margin-bottom:3px}
+.nt .nd{font-weight:700;white-space:nowrap;color:var(--navy);font-size:11.5px}
+.nt .nd.late{color:var(--red)}.nt .nd.soon{color:var(--amber)}.nt .nd.done{color:var(--mut);text-decoration:line-through}
+.nt .tx{color:#3c465a;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.nt-add{background:none;border:1px dashed #c3cad6;border-radius:6px;color:var(--mut);font-size:11.5px;padding:1px 7px}
+.nt-add:hover{border-color:var(--indigo);color:var(--indigo)}
+.nt-more{font-size:11px;color:var(--mut)}
+.popnote{position:fixed;z-index:80;width:min(430px,calc(100vw - 20px));background:#fff;border:1px solid var(--line);
+  border-radius:11px;box-shadow:0 14px 40px rgba(10,20,40,.28);padding:12px 13px}
+.popnote h4{margin:0 0 8px;font-size:13px;display:flex;gap:8px;align-items:center}
+.popnote h4 .x{margin-left:auto;background:none;border:0;font-size:16px;color:var(--mut)}
+.nlist{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto;margin-bottom:9px}
+.nitem{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;background:#fbfcfe}
+.nitem.late{border-left:4px solid var(--red)}.nitem.soon{border-left:4px solid var(--amber)}.nitem.done{opacity:.6}
+.nitem .nd{font-weight:700;white-space:nowrap;font-size:12px;color:var(--navy)}
+.nitem .tx{flex:1;white-space:pre-wrap}
+.nitem button{background:none;border:0;color:#9aa4b5;font-size:13px;padding:0 3px}
+.nitem button:hover{color:var(--indigo)}.nitem button.del:hover{color:var(--red)}
+.nform{display:grid;grid-template-columns:140px 1fr;gap:7px}
+.nform textarea{grid-column:1/-1;min-height:54px;border:1px solid var(--line);border-radius:7px;padding:7px;background:#fbfcfe;resize:vertical}
+.nform input[type=date]{border:1px solid var(--line);border-radius:7px;padding:6px;background:#fbfcfe}
+.nform .check{padding-top:0;font-size:12.5px}
+.nform .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
+/* ---------- v1.4: modelli e generazione lettere ---------- */
+.modwrap{padding:6px 18px 26px;display:flex;flex-direction:column;gap:12px;max-width:1020px}
+.mod-item{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:11px 14px;box-shadow:var(--shadow)}
+.mod-item .ico{font-size:24px}
+.mod-item .nm{font-weight:700}
+.mod-item .meta{font-size:12px;color:var(--mut)}
+.mod-item .acts{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mod-item .acts button{background:#fff;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:12.5px;color:#44506a}
+.mod-item .acts button:hover{border-color:var(--indigo);color:var(--indigo)}
+.mod-item .acts button.del:hover{border-color:var(--red);color:var(--red)}
+.mod-item select{border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fff;font-size:12.5px}
+.mod-grp{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);font-weight:700;margin:6px 2px -4px}
+.ph-list{font-size:12.5px;columns:2;column-gap:24px}
+.ph-list code,.ph code{background:var(--grey-l);border-radius:4px;padding:0 4px;font-size:12px}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(12,20,38,.5);display:grid;place-items:center;padding:14px}
+.modal .box{background:var(--bg);border-radius:12px;width:min(720px,100%);max-height:calc(100vh - 28px);overflow:auto;
+  box-shadow:0 20px 50px rgba(10,20,40,.35)}
+.modal .mh{background:linear-gradient(180deg,var(--navy),var(--navy2));color:#fff;padding:13px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0}
+.modal .mh h2{font-size:16px;flex:1}
+.modal .mb{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.modal .mf{padding:10px 16px 14px;display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+.verif{background:var(--amber-l);border:1px solid #f0d9b0;border-left:4px solid var(--amber);border-radius:8px;padding:9px 12px;font-size:13px}
+.verif ul{margin:4px 0 0 18px;padding:0}
+.okbox{background:var(--green-l);border:1px solid #c9e6d6;border-left:4px solid var(--green);border-radius:8px;padding:9px 12px;font-size:13px}
+.radio-row{display:flex;flex-direction:column;gap:5px;font-size:13px}
+.radio-row label{display:flex;gap:7px;align-items:flex-start}
+.field .radio-row input{width:auto;flex:none;margin-top:3px}
+.btn-out{background:#fff;color:var(--indigo);border:1px solid var(--indigo);border-radius:7px;padding:8px 13px;font-weight:650;font-size:13px}
+.btn-out:hover{background:var(--indigo-l)}
+
 @media (max-width:1300px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:720px){
   .kpis{grid-template-columns:repeat(2,1fr);padding:12px}
@@ -251,7 +308,7 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
   .toolbar{padding:10px 0 6px}.grid2{grid-template-columns:1fr}
 }
 @media print{
-  .topbar .actions,.toolbar,.overlay,.panel{display:none!important}
+  .topbar .actions,.toolbar,.overlay,.panel,.tabs,.nt-add,.popnote,.modal{display:none!important}
   body{background:#fff}.kpis{padding:0}
   .tblwrap{box-shadow:none;margin:12px 0}thead th{position:static}
 }
@@ -264,7 +321,7 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b></div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.4</div>
     </div>
   </div>
   <div class="actions">
@@ -290,6 +347,7 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 <nav class="tabs">
   <button class="tab active" data-act="tab" data-tab="registro">📋 Registro posizioni</button>
   <button class="tab" data-act="tab" data-tab="comunicazioni">💬 Comunicazioni <span class="cnt" id="cntCom">0</span></button>
+  <button class="tab" data-act="tab" data-tab="modelli">📄 Modelli <span class="cnt" id="cntMod">0</span></button>
 </nav>
 
 <div id="viewRegistro">
@@ -346,9 +404,34 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
   </div>
 </div><!-- /viewCom -->
 
+<div id="viewModelli" class="hidden">
+  <section class="toolbar">
+    <button class="btn-add" data-act="caricaModello">＋ Carica modello (.docx)</button>
+    <span id="modFolderInfo" class="desc" style="margin:0"></span>
+  </section>
+  <div class="modwrap">
+    <div class="card">
+      <h3>📄 Modelli di atti</h3>
+      <div class="desc" style="margin:0">Modelli Word (.docx) dello Studio: lettera di messa in mora, ricorso ex art. 633 c.p.c. e altri atti.
+        Il gestionale li conserva nel browser e, con la cartella collegata, li legge e li salva anche nella sottocartella <b>#MODELLI#</b>.
+        Il modello di tipo «Messa in mora» è usato dal pulsante <b>📄 Genera lettera di messa in mora</b> nella scheda della posizione.</div>
+    </div>
+    <div id="modList"></div>
+    <div class="card">
+      <h3>🔤 Segnaposto riconosciuti nei modelli</h3>
+      <div class="desc">Scrivere nel modello Word il segnaposto tra parentesi graffe: viene sostituito con i dati della posizione (maiuscole/minuscole indifferenti).
+        I segnaposto non riconosciuti restano nel testo evidenziati in giallo.</div>
+      <div class="ph-list" id="phList"></div>
+    </div>
+  </div>
+</div><!-- /viewModelli -->
+
 <div class="overlay hidden" id="overlay"></div>
 <aside class="panel hidden" id="panel"></aside>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="modFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden>
+<div id="popNote" class="popnote hidden"></div>
+<div id="modal" class="modal hidden"></div>
 
 <script>
 'use strict';
@@ -488,7 +571,7 @@ function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', impo
 function nuovaPosizione(){
   return {
     id: uid(), codice: codiceProssimo(), cliente:'CA',
-    debitore:{nome:'', forma:'', sede:'', piva:'', pec:''},
+    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:''},
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
     fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
@@ -500,7 +583,7 @@ function nuovaPosizione(){
       esecuzione:{data:'', tipo:'', nota:''}
     },
     promemoria:{data:'', testo:''},
-    note:'', cartella:'', eventi:[], storico:[]
+    note:'', annotazioni:[], cartella:'', eventi:[], storico:[]
   };
 }
 /* completa le posizioni salvate con versioni precedenti del gestionale */
@@ -519,7 +602,25 @@ function migraPosizione(p){
   if(!Array.isArray(p.eventi)) p.eventi=[];
   if(!Array.isArray(p.storico)) p.storico=[];
   p.debitore.forma=normalizzaForma(p.debitore.forma);
+  p.debitore=Object.assign({indirizzo:'', cap:''}, p.debitore);
+  // v1.4: «sede» scritta come indirizzo completo («Via X 1, 22100 Como (CO)») -> indirizzo, CAP e comune
+  if(!p.debitore.indirizzo && !p.debitore.cap && !p.debitore.sedeDivisa){
+    const sp=dividiSede(p.debitore.sede);
+    if(sp){ p.debitore.indirizzo=sp.via; p.debitore.cap=sp.cap; p.debitore.sede=sp.comune; }
+    p.debitore.sedeDivisa=true; // la divisione si tenta una sola volta: poi i campi restano come li scrive l'utente
+  }
+  if(!Array.isArray(p.annotazioni)) p.annotazioni=[];
+  p.annotazioni.forEach(n=>{ if(!n.id) n.id=uid(); });
   return p;
+}
+/* «Via X 12, 22100 Como (CO)» -> {via, cap, comune}; null se la stringa non ha questa forma */
+function dividiSede(v){
+  const t=String(v||'').trim();
+  let m=t.match(/^(.+?),\s*(\d{5})\s+([^,–—]+)$/);
+  if(m) return {via:m[1].trim(), cap:m[2], comune:m[3].trim()};
+  // senza CAP solo se inizia con un toponimo (Via, Piazza, Corso…), per non spezzare diciture particolari
+  m=t.match(/^((?:via|viale|v\.le|piazza|p\.za|piazzale|piazzetta|corso|c\.so|largo|strada|str\.|località|loc\.|vicolo|contrada)\b[^,]+),\s*([^,–—\d]+)$/i);
+  return m ? {via:m[1].trim(), cap:'', comune:m[2].trim()} : null;
 }
 function termineMoraCalcolato(p){ const m=p.fasi.mora; return m.data ? addDays(m.data, +m.giorni||GIORNI_MORA_DEFAULT) : ''; }
 /* totali del credito: se ci sono fatture l'importo dovuto è il residuo calcolato, altrimenti l'importo inserito a mano */
@@ -606,6 +707,7 @@ function scadenze(p){
                !(f.esecuzione && f.esecuzione.data));
   }
   if(p.promemoria && p.promemoria.data) push(p.promemoria.data, p.promemoria.testo || 'Promemoria', true);
+  (p.annotazioni||[]).forEach(n=>{ if(n.avviso && n.data) push(n.data, '📝 Nota: '+(n.testo||'(senza testo)'), !n.fatta, {nota:n.id}); });
   return out.sort((a,b)=> a.data < b.data ? -1 : (a.data > b.data ? 1 : 0));
 }
 function scadenzeAttive(p){ return scadenze(p).filter(s=>s.attiva); }
@@ -662,8 +764,10 @@ function setFileBase(ts){ fileBase=ts||null; try{ localStorage.setItem(BASE_KEY,
 /* --- IndexedDB: conserva il handle della cartella --- */
 function idb(){
   return new Promise((res,rej)=>{
-    const r=indexedDB.open('gestionale_ca',1);
-    r.onupgradeneeded=()=>{ r.result.createObjectStore('handles'); };
+    const r=indexedDB.open('gestionale_ca',2);
+    r.onupgradeneeded=()=>{ const d=r.result;
+      if(!d.objectStoreNames.contains('handles')) d.createObjectStore('handles');
+      if(!d.objectStoreNames.contains('modelli')) d.createObjectStore('modelli',{keyPath:'id'}); };
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
   });
 }
@@ -736,6 +840,7 @@ async function gestisciConflitto(f){
 /* allinea browser e file secondo le regole sopra (usata all'avvio, al collegamento e al ritorno sulla scheda) */
 async function sincronizza(){
   if(!dirHandle || pendingPerm || conflittoAperto) return;
+  sincronizzaModelli();
   const f=await leggiFile();
   if(!f){ if(db) await scriviFileDiretto(true); return; }
   if(!db){ adottaFile(f); return; }
@@ -822,6 +927,7 @@ function importaJson(){ $('#importFile').click(); }
   if(!db){ db={versione:2, aggiornato:Date.now(), posizioni:[esempioPosizione()], comunicazioni:[]}; save(); }
   renderAll();
   resetComForm();
+  caricaModelli();
   if(pendingPerm) aggiornaStatus('📁 Cartella collegata — conferma il permesso con «Ricarica dal file»','warn');
   else aggiornaStatus();
 })();
@@ -898,6 +1004,7 @@ function posizioniVista(){
     return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.note,p.promemoria&&p.promemoria.testo,
             f.ricorso&&f.ricorso.rg,f.decreto&&f.decreto.numero,f.esecuzione&&f.esecuzione.nota]
            .concat((p.fatture||[]).map(x=>x.numero))
+           .concat((p.annotazioni||[]).map(x=>x.testo))
            .filter(Boolean).join(' ').toLowerCase().indexOf(q)>=0;
   });
   const k=filtri.ord, dir=filtri.dir;
@@ -907,6 +1014,7 @@ function posizioniVista(){
     if(k==='importo') return dovuto(p);
     if(k==='fase') return p.fase;
     if(k==='stato') return p.stato;
+    if(k==='note'){ const n=noteOrdinate(p)[0]; return n ? (n.data||'9999-99-98') : '9999-99-99'; }
     const s=prossimaScadenza(p); return s?s.data:'9999-99-99';
   };
   list.sort((a,b)=>{
@@ -948,6 +1056,7 @@ function renderTable(){
       '<td><span class="badge-fase '+(p.stato!=='attiva'?'done':'')+'">F'+F.n+' · '+esc(F.titolo)+'</span></td>'+
       '<td>'+fmtData(dataFase)+'</td>'+
       '<td>'+scadHtml+'</td>'+
+      '<td class="notecell" data-act="note" data-id="'+p.id+'">'+cellaNote(p)+'</td>'+
       '<td><span class="pill '+esc(p.stato)+'">'+esc((STATI.find(s2=>s2[0]===p.stato)||['','?'])[1])+'</span></td>'+
       '</tr>';
   });
@@ -955,7 +1064,7 @@ function renderTable(){
     frec('codice','Codice')+frec('debitore','Debitore')+
     '<th class="num" data-act="ordina" data-k="importo">Importo'+(filtri.ord==='importo'?(filtri.dir===1?' ▲':' ▼'):'')+'</th>'+
     frec('fase','Fase')+'<th data-act="ordina" data-k="scadenza">Prossima scadenza'+(filtri.ord==='scadenza'?(filtri.dir===1?' ▲':' ▼'):'')+'</th>'+
-    '<th></th>'+frec('stato','Stato')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+    '<th></th>'+frec('note','Note')+frec('stato','Stato')+'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 /* ---------------- rendering: pannello dettaglio ---------------- */
@@ -1001,7 +1110,8 @@ function bloccoFase(p,i){
        campo(p,'fasi.mora.giorni','Giorni per adempiere','number','step="1" min="1"')+
        campo(p,'fasi.mora.termine_data','Termine di adempimento','date')+
        menuSel(p,'fasi.mora.esito','Esito (riscontro / silenzio)',ESITO_MORA);
-    h+='</div><div class="desc" id="moraInfo" style="margin:8px 0 0">'+moraInfoHtml(p)+'</div><div>';
+    h+='</div><div class="desc" id="moraInfo" style="margin:8px 0 0">'+moraInfoHtml(p)+'</div>'+
+       '<div class="add-ev"><button class="btn-ind" data-act="generaMora">📄 Genera lettera di messa in mora</button></div><div>';
   }else if(F.key==='ricorso'){
     h+=campo(p,'fasi.ricorso.data','Data deposito','date')+
        campo(p,'fasi.ricorso.rg','Numero RG')+
@@ -1126,7 +1236,9 @@ function renderDetail(){
       menuSel(p,'debitore.forma','Forma giuridica',
         FORME_GIURIDICHE.some(o=>o[0]===p.debitore.forma) ? FORME_GIURIDICHE
           : FORME_GIURIDICHE.concat([[p.debitore.forma, p.debitore.forma+' (altro)']]))+
-      campo(p,'debitore.sede','Sede legale')+
+      campo(p,'debitore.indirizzo','Indirizzo sede (via e civico)')+
+      campo(p,'debitore.cap','CAP','text','maxlength="5" inputmode="numeric"')+
+      campo(p,'debitore.sede','Comune sede legale (prov.)')+
       campo(p,'debitore.piva','P. IVA / C.F.')+
       campo(p,'debitore.pec','PEC')+
       campo(p,'codice','Codice posizione')+
@@ -1164,6 +1276,10 @@ function renderDetail(){
         '<button class="btn-ind" data-act="addEvento">Aggiungi</button>'+
       '</div></div>'+
 
+    '<div class="card"><h3>📌 Note con data <span class="st '+(p.annotazioni.length?'done':'future')+'">'+p.annotazioni.length+'</span></h3>'+
+      '<div class="desc">Le stesse note della colonna «Note» del registro. Con «avvisami alla data» la nota diventa una scadenza.</div>'+
+      '<div id="panelNote">'+editorNoteHtml(p,'panel')+'</div></div>'+
+
     '<div class="card"><h3>📝 Note libere</h3>'+
       '<textarea class="note-area" data-path="note" placeholder="Annotazioni interne, trattative, accordi…">'+esc(p.note||'')+'</textarea>'+
     '</div>'+
@@ -1172,6 +1288,9 @@ function renderDetail(){
     (avanzabile
       ? '<button class="btn-primary" data-act="avanza" style="background:var(--indigo);color:#fff;border:0;border-radius:7px;padding:9px 16px;font-weight:700">'+btnAvanza+'</button>'
       : '<span style="font-size:12.5px;color:var(--mut)">'+(completata?'✓ Procedura completata: azione esecutiva registrata':'Posizione chiusa o sospesa')+'</span>')+
+    ((p.fase>1 || completata)
+      ? '<button class="btn-out" data-act="indietroFase" style="background:#fff;color:var(--mut);border:1px solid var(--line);border-radius:7px;padding:9px 12px" title="Annulla la registrazione dell\'ultima fase (per correggere un errore)">↩ Annulla «'+esc(FASI[(completata?6:p.fase-1)-1].titolo)+'» completata</button>'
+      : '')+
     '<span class="grow"></span>'+
     '<button class="btn-dark" data-act="comDiPosizione" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)" title="Comunicazioni relative a questa posizione">💬 Comunicazioni</button>'+
     '<select class="stato-sel" data-path="stato">'+
@@ -1315,6 +1434,8 @@ function setView(v){
   view=v;
   $('#viewRegistro').classList.toggle('hidden', v!=='registro');
   $('#viewCom').classList.toggle('hidden', v!=='comunicazioni');
+  $('#viewModelli').classList.toggle('hidden', v!=='modelli');
+  if(v==='modelli') renderModelli();
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===v));
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -1341,6 +1462,27 @@ function avanzaFase(p){
   if(p.fase<6) p.fase++;
   save(); renderAll();
   toast('Fase '+F.n+' registrata: '+F.titolo);
+}
+/* Riporta indietro di una fase (correzione di un «Registra e passa alla successiva» premuto per errore).
+   I dati inseriti nella fase (date, esito) restano; si tolgono solo la registrazione nello storico
+   e l'evento automatico. */
+function indietroFase(p){
+  const completata=faseCompletata(p);
+  const n = completata ? 6 : p.fase-1;
+  if(n<1) return;
+  const F=FASI[n-1];
+  if(!confirm('Riportare la posizione alla fase '+n+' «'+F.titolo+'»?\n\n'+
+    'La fase non risulterà più completata. I dati già inseriti (date, esito) restano e si possono correggere.')) return;
+  p.storico=p.storico.filter(s=>s.fase<n);
+  const testo={1:'Messa in mora inviata / esito registrato',2:'Deposito del ricorso per ingiunzione',
+    3:'Decreto ingiuntivo emesso',4:'Notifica del decreto ingiuntivo',
+    5:'Notifica del precetto',6:'Azione esecutiva avviata'}[n];
+  const i=p.eventi.map(e=>e.testo).lastIndexOf(testo);
+  if(i>=0) p.eventi.splice(i,1);
+  p.eventi.push({data:oggi(), testo:'Annullata la registrazione della fase '+n+' «'+F.titolo+'» (correzione)'});
+  p.fase=n;
+  save(); renderAll();
+  toast('Posizione riportata alla fase '+n+': '+F.titolo);
 }
 function nuova(){ const p=nuovaPosizione(); db.posizioni.unshift(p); save(); renderAll(); apri(p.id);
   setTimeout(()=>{ const el=$('#panel [data-path="debitore.nome"]'); if(el) el.focus(); },60); }
@@ -1371,13 +1513,578 @@ function copiaCartella(){
     ta.select(); try{document.execCommand('copy'); done();}catch(e){alert(path);} ta.remove(); }
 }
 
+/* ================================================================
+   v1.4 — NOTE CON DATA (colonna «Note» del registro)
+   ================================================================ */
+let notaAperta = null;   // {posId, editId, ctx}
+function noteOrdinate(p){
+  // prima le note con avviso ancora aperte (per data), poi le altre dalla più recente
+  const l=(p.annotazioni||[]).slice();
+  const peso=n=> (n.avviso && n.data && !n.fatta) ? 0 : 1;
+  return l.sort((a,b)=>{
+    const pa=peso(a), pb=peso(b); if(pa!==pb) return pa-pb;
+    if(pa===0) return a.data<b.data?-1:(a.data>b.data?1:0);
+    const ka=a.data||a.creata||'', kb=b.data||b.creata||'';
+    return ka<kb?1:(ka>kb?-1:0);
+  });
+}
+function classeNota(n){
+  if(n.fatta) return 'done';
+  if(!n.avviso || !n.data) return '';
+  const g=giorniDa(n.data); if(g===null) return '';
+  return g<0?'late':(g<=7?'soon':'');
+}
+function cellaNote(p){
+  const l=noteOrdinate(p);
+  let h='';
+  l.slice(0,2).forEach(n=>{
+    h+='<div class="nt" title="'+esc(n.testo)+'">'+(n.data?'<span class="nd '+classeNota(n)+'">'+(n.avviso?'⏰ ':'')+fmtData(n.data)+'</span>':'')+
+       '<span class="tx">'+esc(n.testo)+'</span></div>';
+  });
+  if(l.length>2) h+='<div class="nt-more">+ altre '+(l.length-2)+'</div>';
+  return h+'<button class="nt-add" data-act="note" data-id="'+p.id+'">'+(l.length?'✎ note':'＋ nota')+'</button>';
+}
+function editorNoteHtml(p, ctx){
+  const l=noteOrdinate(p);
+  const ed = notaAperta && notaAperta.posId===p.id && notaAperta.ctx===ctx && notaAperta.editId
+    ? p.annotazioni.find(n=>n.id===notaAperta.editId) : null;
+  let h='<div class="nlist">';
+  l.forEach(n=>{
+    const c=classeNota(n);
+    h+='<div class="nitem '+c+'">'+
+      (n.data?'<span class="nd">'+(n.avviso?'⏰ ':'')+fmtData(n.data)+'</span>':'')+
+      '<span class="tx">'+esc(n.testo)+'</span>'+
+      (n.avviso&&n.data?'<button data-act="notaFatta" data-pos="'+p.id+'" data-n="'+n.id+'" data-ctx="'+ctx+'" title="'+(n.fatta?'Riapri':'Segna come fatta')+'">'+(n.fatta?'↺':'✓')+'</button>':'')+
+      '<button data-act="notaModifica" data-pos="'+p.id+'" data-n="'+n.id+'" data-ctx="'+ctx+'" title="Modifica">✎</button>'+
+      '<button class="del" data-act="notaElimina" data-pos="'+p.id+'" data-n="'+n.id+'" data-ctx="'+ctx+'" title="Elimina">✕</button>'+
+    '</div>';
+  });
+  if(!l.length) h+='<div class="noscad">Nessuna nota.</div>';
+  h+='</div><div class="nform" data-ctx="'+ctx+'">'+
+    '<input type="date" class="nf-data" value="'+esc(ed?ed.data:'')+'" title="Data (facoltativa)">'+
+    '<label class="check"><input type="checkbox" class="nf-avviso" '+(ed&&ed.avviso?'checked':'')+'> avvisami alla data (diventa scadenza)</label>'+
+    '<textarea class="nf-testo" placeholder="Testo della nota…">'+esc(ed?ed.testo:'')+'</textarea>'+
+    '<div class="acts">'+(ed?'<button class="btn-danger" data-act="notaAnnulla" data-pos="'+p.id+'" data-ctx="'+ctx+'">Annulla</button>':'')+
+    '<button class="btn-ind" data-act="notaSalva" data-pos="'+p.id+'" data-ctx="'+ctx+'">'+(ed?'Salva modifica':'Aggiungi nota')+'</button></div></div>';
+  return h;
+}
+function apriPopNote(id, anchor){
+  const p=getPos(id); if(!p) return;
+  notaAperta={posId:id, editId:null, ctx:'pop'};
+  const pop=$('#popNote');
+  pop.innerHTML='<h4>📌 Note · '+esc(p.codice)+' — '+esc((p.debitore.nome||'').slice(0,40))+'<button class="x" data-act="notaChiudi" title="Chiudi">✕</button></h4>'+
+    '<div id="popNoteBody">'+editorNoteHtml(p,'pop')+'</div>';
+  pop.classList.remove('hidden');
+  const r=anchor.getBoundingClientRect(), w=pop.offsetWidth, hgt=pop.offsetHeight;
+  let left=Math.min(r.left, window.innerWidth-w-10), top=r.bottom+4;
+  if(top+hgt>window.innerHeight-10) top=Math.max(10, r.top-hgt-4);
+  pop.style.left=Math.max(10,left)+'px'; pop.style.top=top+'px';
+  setTimeout(()=>{ const t=pop.querySelector('.nf-testo'); if(t) t.focus(); },20);
+}
+function chiudiPopNote(){ $('#popNote').classList.add('hidden'); if(notaAperta&&notaAperta.ctx==='pop') notaAperta=null; }
+function ridisegnaEditorNote(p, ctx){
+  if(ctx==='pop'){ const b=$('#popNoteBody'); if(b) b.innerHTML=editorNoteHtml(p,'pop'); }
+  const pb=$('#panelNote'); if(pb && openId===p.id) pb.innerHTML=editorNoteHtml(p,'panel');
+}
+function salvaNota(posId, ctx, box){
+  const p=getPos(posId); if(!p) return;
+  const testo=box.querySelector('.nf-testo').value.trim(), data=box.querySelector('.nf-data').value, avviso=box.querySelector('.nf-avviso').checked;
+  if(!testo){ box.querySelector('.nf-testo').focus(); return; }
+  if(avviso && !data){ alert('Per «avvisami alla data» serve una data.'); box.querySelector('.nf-data').focus(); return; }
+  const ed = notaAperta && notaAperta.ctx===ctx && notaAperta.editId ? p.annotazioni.find(n=>n.id===notaAperta.editId) : null;
+  if(ed) Object.assign(ed,{testo,data,avviso});
+  else p.annotazioni.push({id:uid(), testo, data, avviso, fatta:false, creata:oggi()});
+  notaAperta={posId, editId:null, ctx};
+  save(); renderKpis(); renderTable(); aggiornaScadenzePanel(); ridisegnaEditorNote(p, ctx);
+  toast(ed?'Nota aggiornata':'Nota aggiunta');
+}
+
+/* ================================================================
+   v1.4 — ZIP minimo (lettura/scrittura .docx senza librerie)
+   ================================================================ */
+const CRC_T=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC_T[(c^u8[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+async function streamBytes(u8, ts){ return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(ts)).arrayBuffer()); }
+function zipLeggi(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd=-1;
+  for(let i=u8.length-22;i>=Math.max(0,u8.length-66000);i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error('il file non è un .docx valido (archivio zip non riconosciuto)');
+  const n=dv.getUint16(eocd+10,true); let off=dv.getUint32(eocd+16,true);
+  const dec=new TextDecoder(), out=[];
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(off,true)!==0x02014b50) throw new Error('indice dello zip danneggiato');
+    const e={ flags:dv.getUint16(off+8,true), method:dv.getUint16(off+10,true), time:dv.getUint16(off+12,true), date:dv.getUint16(off+14,true),
+      crc:dv.getUint32(off+16,true), csize:dv.getUint32(off+20,true), usize:dv.getUint32(off+24,true) };
+    const nl=dv.getUint16(off+28,true), xl=dv.getUint16(off+30,true), cl=dv.getUint16(off+32,true), lo=dv.getUint32(off+42,true);
+    e.name=dec.decode(u8.subarray(off+46, off+46+nl));
+    const lnl=dv.getUint16(lo+26,true), lxl=dv.getUint16(lo+28,true);
+    e.raw=u8.subarray(lo+30+lnl+lxl, lo+30+lnl+lxl+e.csize);
+    out.push(e); off+=46+nl+xl+cl;
+  }
+  return out;
+}
+async function zipTesto(e){
+  if(e.method===0) return new TextDecoder().decode(e.raw);
+  if(e.method!==8) throw new Error('compressione zip non supportata ('+e.method+')');
+  if(typeof DecompressionStream==='undefined') throw new Error('browser troppo vecchio: usare Chrome o Edge aggiornati');
+  return new TextDecoder().decode(await streamBytes(e.raw, new DecompressionStream('deflate-raw')));
+}
+async function zipScrivi(entries){
+  // entries: [{name, raw, method, crc, usize, time, date}] (originali) oppure {name, data:Uint8Array} (modificati)
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  for(const e of entries){
+    if(e.data){
+      e.crc=crc32(e.data); e.usize=e.data.length;
+      if(typeof CompressionStream!=='undefined'){ e.raw=await streamBytes(e.data, new CompressionStream('deflate-raw')); e.method=8; }
+      else { e.raw=e.data; e.method=0; }
+    }
+    const nm=enc.encode(e.name), lh=new Uint8Array(30+nm.length), d=new DataView(lh.buffer);
+    d.setUint32(0,0x04034b50,true); d.setUint16(4,20,true); d.setUint16(6,0x0800,true); d.setUint16(8,e.method,true);
+    d.setUint16(10,e.time||0,true); d.setUint16(12,e.date||0x21,true); d.setUint32(14,e.crc,true);
+    d.setUint32(18,e.raw.length,true); d.setUint32(22,e.usize,true); d.setUint16(26,nm.length,true); lh.set(nm,30);
+    const ch=new Uint8Array(46+nm.length), c=new DataView(ch.buffer);
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,e.method,true);
+    c.setUint16(12,e.time||0,true); c.setUint16(14,e.date||0x21,true); c.setUint32(16,e.crc,true); c.setUint32(20,e.raw.length,true);
+    c.setUint32(24,e.usize,true); c.setUint16(28,nm.length,true); c.setUint32(42,off,true); ch.set(nm,46);
+    parts.push(lh, e.raw); cen.push(ch); off+=lh.length+e.raw.length;
+  }
+  const cenLen=cen.reduce((s,x)=>s+x.length,0), end=new Uint8Array(22), d=new DataView(end.buffer);
+  d.setUint32(0,0x06054b50,true); d.setUint16(8,entries.length,true); d.setUint16(10,entries.length,true);
+  d.setUint32(12,cenLen,true); d.setUint32(16,off,true);
+  return new Blob(parts.concat(cen,[end]), {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+
+/* ================================================================
+   v1.4 — COMPILAZIONE DEI MODELLI WORD
+   ================================================================ */
+const W_NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const FRASE_PDR='e per il quale non è stato rispettato il piano di pagamento sottoscritto.';
+const FRASE_FATTURE='come da fatture regolarmente emesse, ad oggi scadute e rimaste insolute nonostante i solleciti già inoltrati.';
+const SPESE_VUOTE='[……..]';
+/* segnaposto: chiave normalizzata -> [descrizione, funzione(valori, testoOriginale) -> testo] */
+const SEGNAPOSTO = {
+  DATA:['data della lettera (gg/mm/aaaa)', v=>v.data],
+  DEBITORE:['denominazione del debitore', v=>v.debitore],
+  PEC:['PEC del debitore', v=>v.pec], PECDEBITORE:['PEC del debitore', v=>v.pec],
+  SEDE:['indirizzo della sede (via e civico)', v=>v.via], VIA:['via e civico', v=>v.via], INDIRIZZO:['via e civico', v=>v.via],
+  CAP:['CAP', v=>v.cap], COMUNE:['comune (prov.)', v=>v.comune], CITTA:['comune (prov.)', v=>v.comune],
+  CAPCOMUNE:['CAP e comune', v=>(v.cap+' '+v.comune).trim()],
+  DEBITO:['importo dovuto (con «€» se scritto {€ DEBITO})', (v,raw)=>(/€/.test(raw)?'€ ':'')+v.debito],
+  IMPORTO:['importo dovuto', (v,raw)=>(/€/.test(raw)?'€ ':'')+v.debito],
+  SPESE:['spese legali (vuote = [……..] in giallo)', v=>v.spese||SPESE_VUOTE], SPESELEGALI:['spese legali', v=>v.spese||SPESE_VUOTE],
+  PIVA:['P. IVA / C.F.', v=>v.piva], CODICE:['codice posizione (CA-AAAA-NNN)', v=>v.codice],
+  FORMA:['forma giuridica', v=>v.forma], GIORNI:['giorni per adempiere', v=>String(v.giorni)],
+  FATTURE:['elenco delle fatture insolute', v=>v.fatture], CAUSA:['causa del credito (PDR o fatture)', v=>v.causaFrase]
+};
+function chiaveSegnaposto(raw){
+  return raw.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+/* testi <w:t> che appartengono direttamente al paragrafo (non a caselle di testo annidate) */
+function testiParagrafo(p){
+  return Array.from(p.getElementsByTagNameNS(W_NS,'t')).filter(t=>{
+    let a=t.parentNode; while(a && !(a.localName==='p' && a.namespaceURI===W_NS)) a=a.parentNode; return a===p; });
+}
+function evidenziaRun(r){
+  let rPr=null; for(const c of r.childNodes) if(c.localName==='rPr'){ rPr=c; break; }
+  const doc=r.ownerDocument;
+  if(!rPr){ rPr=doc.createElementNS(W_NS,'w:rPr'); r.insertBefore(rPr, r.firstChild); }
+  for(const c of Array.from(rPr.childNodes)) if(c.localName==='highlight') rPr.removeChild(c);
+  const hl=doc.createElementNS(W_NS,'w:highlight'); hl.setAttributeNS(W_NS,'w:val','yellow');
+  // ordine dello schema: highlight va prima di u, effect, bdr, shd, fitText, vertAlign, rtl, cs, em, lang…
+  const dopo=['u','effect','bdr','shd','fitText','vertAlign','rtl','cs','em','lang','eastAsianLayout','specVanish','oMath'];
+  const ref=Array.from(rPr.childNodes).find(c=>dopo.indexOf(c.localName)>=0);
+  rPr.insertBefore(hl, ref||null);
+}
+function setTesto(t, txt){ t.textContent=txt; t.setAttribute('xml:space','preserve'); }
+/* sostituisce nel paragrafo ogni occorrenza di `re` (anche spezzata su più run); fn(match) -> {testo, giallo} | null */
+function sostituisci(p, re, fn){
+  let n=0, from=0;
+  for(let guard=0; guard<200; guard++){
+    const ts=testiParagrafo(p); const full=ts.map(t=>t.textContent).join('');
+    re.lastIndex=from; const m=re.exec(full); if(!m) break;
+    const r=fn(m); if(!r){ from=m.index+Math.max(1,m[0].length); continue; }
+    const start=m.index, end=start+m[0].length;
+    let pos=0, i0=-1, o0=0, i1=-1, o1=0;
+    ts.forEach((t,i)=>{ const L=t.textContent.length;
+      if(i0<0 && start<pos+L){ i0=i; o0=start-pos; }
+      if(i1<0 && end<=pos+L && i0>=0){ i1=i; o1=end-pos; }
+      pos+=L; });
+    if(i0<0||i1<0) break;
+    const t0=ts[i0], before=t0.textContent.slice(0,o0), after=ts[i1].textContent.slice(o1);
+    for(let i=i0+1;i<=i1;i++) setTesto(ts[i], i===i1 ? after : '');
+    if(r.giallo){
+      // isola il testo sostituito in un run proprio, per evidenziare solo quello
+      const run=t0.parentNode;
+      const resto = i1===i0 ? after : '';
+      setTesto(t0, r.testo);
+      if(before) run.parentNode.insertBefore(clonaParte(run, t0, before, 'prima'), run);
+      if(resto) run.parentNode.insertBefore(clonaParte(run, t0, resto, 'dopo'), run.nextSibling);
+      // nel run evidenziato resta solo il testo sostituito (tab e interruzioni vanno nei run clonati)
+      Array.from(run.childNodes).forEach(c=>{
+        if(c===t0 || c.localName==='rPr') return;
+        if((before && isBefore(c,t0)) || (resto && isBefore(t0,c))) run.removeChild(c); });
+      evidenziaRun(run);
+    } else setTesto(t0, before + r.testo + (i1===i0 ? after : ''));
+    from=start+r.testo.length; n++;
+  }
+  return n;
+}
+function isBefore(a,b){ return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING); }
+/* copia del run con solo la parte prima (o dopo) del testo t0 */
+function clonaParte(run, t0, txt, lato){
+  const k=Array.prototype.indexOf.call(run.childNodes, t0);
+  const c=run.cloneNode(true), ch=Array.from(c.childNodes);
+  setTesto(ch[k], txt);
+  ch.forEach((n,i)=>{ if(n.localName==='rPr') return;
+    if(lato==='prima' ? i>k : i<k) c.removeChild(n); });
+  return c;
+}
+function compilaXml(xml, v, rep){
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('XML del modello non leggibile');
+  const ps=Array.from(doc.getElementsByTagNameNS(W_NS,'p'));
+  ps.forEach(p=>{
+    const testo=testiParagrafo(p).map(t=>t.textContent).join('');
+    if(!testo) return;
+    // data in testa alla lettera scritta per esteso nel modello («Como, 19/11/2026»)
+    if(/^\s*[A-ZÀ-Ý][\wÀ-ÿ'’ .]{1,40},\s*\d{1,2}\/\d{1,2}\/\d{4}\s*$/.test(testo))
+      sostituisci(p, /\d{1,2}\/\d{1,2}\/\d{4}/g, ()=>({testo:v.data}));
+    // causa del credito: pratiche senza piano di rientro
+    if(v.causa==='fatture' && testo.indexOf(FRASE_PDR)>=0){ sostituisci(p, new RegExp(FRASE_PDR.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'), ()=>({testo:FRASE_FATTURE})); rep.causa=true; }
+    // segnaposto tra graffe
+    sostituisci(p, /\{([^{}]{1,40})\}/g, m=>{
+      const raw=m[1], k=chiaveSegnaposto(raw);
+      if(!/[A-Z]/.test(k)) { rep.usati.add('SPESE'); const t=v.spese||SPESE_VUOTE; return {testo:t, giallo:!v.spese}; } // es. {…….,00}
+      const def=SEGNAPOSTO[k];
+      if(!def){ rep.ignoti.add('{'+raw+'}'); return null; }
+      rep.usati.add(k);
+      const t=def[1](v, raw);
+      if(k==='SPESE'||k==='SPESELEGALI') return {testo:t, giallo:!v.spese};
+      if(!t){ rep.vuoti.add(def[0]); return {testo:'[…]', giallo:true}; }
+      return {testo:t};
+    });
+    // diciture del modello storico dello Studio (senza graffe)
+    sostituisci(p, /CAP COMUNE/g, ()=>{ rep.usati.add('CAPCOMUNE'); const t=(v.cap+' '+v.comune).trim(); return t?{testo:t}:{testo:'CAP COMUNE',giallo:true}; });
+    sostituisci(p, /indirizzo@pec/g, ()=>v.pec?{testo:v.pec}:{testo:'indirizzo@pec',giallo:true});
+    sostituisci(p, /Via ……/g, ()=>v.via?{testo:v.via}:{testo:'Via ……',giallo:true});
+    sostituisci(p, /22100 Como \(CO\)/g, ()=>{ const t=(v.cap+' '+v.comune).trim(); return t?{testo:t}:{testo:'22100 Como (CO)',giallo:true}; });
+    sostituisci(p, /\[……\.\.\]|\[\.\.\.\.\]/g, m=> v.spese ? {testo:v.spese} : {testo:m[0], giallo:true});
+  });
+  if(rep.tabPos) impaginaDestinatario(doc, ps, v, rep.tabPos);
+  // segnaposto rimasti (es. su paragrafi in caselle di testo): li si segnala
+  const tutto=Array.from(doc.getElementsByTagNameNS(W_NS,'t')).map(t=>t.textContent).join('');
+  (tutto.match(/\{[^{}]{1,40}\}/g)||[]).forEach(x=>{ if(SEGNAPOSTO[chiaveSegnaposto(x)]) rep.ignoti.add(x); });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n'+new XMLSerializer().serializeToString(doc.documentElement);
+}
+/* Blocco destinatario (come genera_mora.py): la colonna di destra parte dal primo tab stop dello stile Normal.
+   Con ragioni sociali lunghe il testo andava a capo sul margine sinistro: si applica un rientro sospeso.
+   Con PEC oltre 40 caratteri la parte dopo la «@» passa all'inizio della riga del CAP. */
+const PEC_MAX=40;
+function impaginaDestinatario(doc, ps, v, pos){
+  const txt=p=>testiParagrafo(p).map(t=>t.textContent).join('');
+  const iNome=ps.findIndex(p=>txt(p).trim()===v.debitore.trim() && p.getElementsByTagNameNS(W_NS,'tab').length);
+  if(iNome<0) return;
+  ps.slice(iNome, iNome+3).forEach(p=>{
+    if(!p.getElementsByTagNameNS(W_NS,'tab').length) return;
+    let pPr=Array.from(p.childNodes).find(c=>c.localName==='pPr');
+    if(!pPr){ pPr=doc.createElementNS(W_NS,'w:pPr'); p.insertBefore(pPr, p.firstChild); }
+    let ind=Array.from(pPr.childNodes).find(c=>c.localName==='ind');
+    if(!ind){ ind=doc.createElementNS(W_NS,'w:ind');
+      const dopo=['jc','textDirection','textAlignment','textboxTightWrap','outlineLvl','divId','cnfStyle','rPr','sectPr','pPrChange'];
+      pPr.insertBefore(ind, Array.from(pPr.childNodes).find(c=>dopo.indexOf(c.localName)>=0)||null); }
+    ind.setAttributeNS(W_NS,'w:left',String(pos)); ind.setAttributeNS(W_NS,'w:hanging',String(pos));
+  });
+  if(!v.pec || v.pec.length<=PEC_MAX || v.pec.indexOf('@')<0) return;
+  const pPec=ps[iNome+1], pCap=ps[iNome+2]; if(!pPec || !pCap || txt(pPec).indexOf(v.pec)!==0) return;
+  const tPec=testiParagrafo(pPec).find(t=>t.textContent.indexOf(v.pec)>=0); if(!tPec) return;
+  const [prima, dopo]=[v.pec.slice(0,v.pec.indexOf('@')+1), v.pec.slice(v.pec.indexOf('@')+1)];
+  setTesto(tPec, tPec.textContent.replace(v.pec, prima));
+  const nuovo=clonaParte(tPec.parentNode, tPec, dopo, 'dopo');
+  Array.from(nuovo.childNodes).forEach(c=>{ if(c.localName!=='rPr' && c.localName!=='t') nuovo.removeChild(c); });
+  const primoRun=Array.from(pCap.childNodes).find(c=>c.localName==='r');
+  pCap.insertBefore(nuovo, primoRun||null);
+}
+async function tabNormale(entries){
+  const e=entries.find(x=>x.name==='word/styles.xml'); if(!e) return 0;
+  const doc=new DOMParser().parseFromString(await zipTesto(e),'application/xml');
+  // stile di paragrafo predefinito (styleId «Normal», «Normale»… secondo la lingua di Word)
+  const at=(x,n)=>x.getAttributeNS(W_NS,n)||x.getAttribute('w:'+n);
+  const st=Array.from(doc.getElementsByTagNameNS(W_NS,'style')).find(x=>at(x,'type')==='paragraph' && (at(x,'default')==='1'||at(x,'default')==='true'));
+  const tab=st && st.getElementsByTagNameNS(W_NS,'tab')[0];
+  return tab ? (+(tab.getAttributeNS(W_NS,'pos')||tab.getAttribute('w:pos'))||0) : 0;
+}
+async function compilaDocx(buf, v){
+  const entries=zipLeggi(buf);
+  const rep={usati:new Set(), ignoti:new Set(), vuoti:new Set(), causa:false, testo:'', tabPos:0};
+  try{ rep.tabPos=await tabNormale(entries); }catch(e){}
+  const out=[];
+  for(const e of entries){
+    if(/^word\/(document|header\d*|footer\d*)\.xml$/.test(e.name)){
+      const xml=compilaXml(await zipTesto(e), v, rep);
+      if(e.name==='word/document.xml') rep.testo=xml.replace(/<w:tab\/>/g,' ').replace(/<\/w:p>/g,'\n').replace(/<[^>]+>/g,'');
+      out.push({name:e.name, data:new TextEncoder().encode(xml), time:e.time, date:e.date});
+    } else out.push(e);
+  }
+  return {blob: await zipScrivi(out), rep};
+}
+async function segnapostoDelModello(buf){
+  const entries=zipLeggi(buf), trovati=new Set();
+  for(const e of entries){
+    if(!/^word\/(document|header\d*|footer\d*)\.xml$/.test(e.name)) continue;
+    const xml=await zipTesto(e);
+    const doc=new DOMParser().parseFromString(xml,'application/xml');
+    Array.from(doc.getElementsByTagNameNS(W_NS,'p')).forEach(p=>{
+      const t=testiParagrafo(p).map(x=>x.textContent).join('');
+      (t.match(/\{[^{}]{1,40}\}/g)||[]).forEach(x=>trovati.add(x));
+      if(/CAP COMUNE|indirizzo@pec|Via ……|\[……\.\.\]/.test(t)) (t.match(/CAP COMUNE|indirizzo@pec|Via ……|\[……\.\.\]/g)||[]).forEach(x=>trovati.add(x));
+      if(t.indexOf(FRASE_PDR)>=0) trovati.add('frase sul piano di rientro');
+    });
+  }
+  return Array.from(trovati);
+}
+
+/* ================================================================
+   v1.4 — AREA MODELLI (IndexedDB + sottocartella #MODELLI#)
+   ================================================================ */
+const CARTELLA_MODELLI='#MODELLI#';
+const TIPI_MODELLO=[['mora','Lettera di messa in mora'],['ricorso','Ricorso ex art. 633 c.p.c.'],['altro','Altro atto']];
+let modelli=null;   // null = non ancora letti da IndexedDB; poi [{id, nome, fileName, tipo, size, aggiunto, origine, lastModified, buf}
+function tipoDaNome(n){ n=n.toLowerCase(); return /mora|diffida/.test(n)?'mora':(/633|ricorso|ingiun|monitor/.test(n)?'ricorso':'altro'); }
+async function idbTutti(){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction('modelli','readonly');
+  const q=t.objectStore('modelli').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>rej(q.error); }); }
+async function idbModello(op, v){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction('modelli','readwrite');
+  const st=t.objectStore('modelli'); op==='del'?st.delete(v):st.put(v); t.oncomplete=()=>res(true); t.onerror=()=>rej(t.error); }); }
+async function leggiModelliIdb(){ if(modelli) return; try{ modelli=await idbTutti(); }catch(e){ modelli=[]; } }
+async function caricaModelli(){
+  await leggiModelliIdb();
+  await sincronizzaModelli(true);
+  renderModelli();
+}
+async function cartellaModelli(crea){
+  if(!dirHandle || pendingPerm) return null;
+  try{ return await dirHandle.getDirectoryHandle(CARTELLA_MODELLI,{create:!!crea}); }catch(e){ return null; }
+}
+/* importa i .docx presenti in #MODELLI# (nuovi o modificati sul disco) */
+async function sincronizzaModelli(silenzioso){
+  await leggiModelliIdb();
+  const dh=await cartellaModelli(false); if(!dh) return;
+  let nuovi=0;
+  try{
+    for await (const [nome, h] of dh.entries()){
+      if(h.kind!=='file' || !/\.docx$/i.test(nome) || /^~\$/.test(nome)) continue;
+      const f=await h.getFile();
+      const es=modelli.find(m=>m.fileName===nome);
+      if(es && es.nascosto) continue;
+      if(es && es.lastModified===f.lastModified) continue;
+      const rec=Object.assign(es||{id:uid(), nome:nome.replace(/\.docx$/i,'').replace(/_/g,' '), tipo:tipoDaNome(nome), aggiunto:oggi()},
+        {fileName:nome, size:f.size, lastModified:f.lastModified, origine:'cartella', buf:await f.arrayBuffer()});
+      if(!es) modelli.push(rec);
+      await idbModello('put', rec); nuovi++;
+    }
+  }catch(e){ if(!silenzioso) alert('Lettura della cartella '+CARTELLA_MODELLI+' non riuscita: '+e.message); }
+  if(nuovi){ renderModelli(); if(!silenzioso) toast(nuovi+' modelli aggiornati dalla cartella'); }
+}
+async function aggiungiModelli(files){
+  await leggiModelliIdb();
+  let n=0;
+  for(const f of files){
+    if(!/\.docx$/i.test(f.name)){ alert('«'+f.name+'» non è un file .docx.\nAprire il modello in Word e usare «Salva con nome → Documento di Word (.docx)».'); continue; }
+    const buf=await f.arrayBuffer();
+    try{ zipLeggi(buf); }catch(e){ alert('«'+f.name+'»: '+e.message); continue; }
+    let rec=modelli.find(m=>m.fileName===f.name);
+    if(rec && !rec.nascosto && !confirm('Esiste già un modello «'+f.name+'». Sostituirlo?')) continue;
+    rec=Object.assign(rec||{id:uid(), nome:f.name.replace(/\.docx$/i,'').replace(/_/g,' '), tipo:tipoDaNome(f.name)},
+      {fileName:f.name, size:f.size, lastModified:f.lastModified, aggiunto:oggi(), origine:'caricato', nascosto:false, buf});
+    if(modelli.indexOf(rec)<0) modelli.push(rec);
+    const dh=await cartellaModelli(true);
+    if(dh){ try{ const fh=await dh.getFileHandle(f.name,{create:true}); const w=await fh.createWritable(); await w.write(buf); await w.close();
+      rec.origine='cartella'; rec.lastModified=(await fh.getFile()).lastModified; }catch(e){ toast('Modello salvato solo nel browser: '+e.message); } }
+    await idbModello('put', rec); n++;
+  }
+  renderModelli(); if(n) toast(n===1?'Modello caricato':n+' modelli caricati');
+}
+function modelliVisibili(){ return (modelli||[]).filter(m=>!m.nascosto); }
+function renderModelli(){
+  const cnt=$('#cntMod'); if(cnt) cnt.textContent=modelliVisibili().length;
+  const info=$('#modFolderInfo');
+  if(info) info.innerHTML = IN_ARTEFATTO ? 'Versione online: i modelli restano in questo browser.'
+    : (dirHandle && !pendingPerm ? '📁 Cartella collegata: i modelli vengono letti e salvati anche in <b>'+CARTELLA_MODELLI+'</b>.'
+                                 : 'Collega la cartella (menù Dati) per leggere i modelli dalla sottocartella <b>'+CARTELLA_MODELLI+'</b>.');
+  const box=$('#modList'); if(!box) return;
+  const vis=modelliVisibili();
+  if(!vis.length){ box.innerHTML='<div class="card com-empty">Nessun modello. Carica la lettera di messa in mora dello Studio (.docx) con «＋ Carica modello».</div>'; }
+  else box.innerHTML=TIPI_MODELLO.map(([k,l])=>{
+    const l2=vis.filter(m=>m.tipo===k); if(!l2.length) return '';
+    return '<div class="mod-grp">'+esc(l)+'</div>'+l2.map(m=>
+      '<div class="mod-item"><span class="ico">📄</span><div><div class="nm">'+esc(m.nome)+'</div>'+
+      '<div class="meta">'+esc(m.fileName)+' · '+Math.round((m.size||0)/1024)+' KB · '+(m.origine==='cartella'?'cartella '+CARTELLA_MODELLI:'solo nel browser')+
+      ' · aggiunto il '+fmtData(m.aggiunto)+'</div><div class="meta ph" id="ph-'+m.id+'"></div></div>'+
+      '<div class="acts"><select data-act="tipoModello" data-id="'+m.id+'">'+TIPI_MODELLO.map(t=>'<option value="'+t[0]+'"'+(t[0]===m.tipo?' selected':'')+'>'+esc(t[1])+'</option>').join('')+'</select>'+
+      '<button data-act="segnapostoModello" data-id="'+m.id+'">🔤 Segnaposto</button>'+
+      '<button data-act="scaricaModello" data-id="'+m.id+'">⬇ Scarica</button>'+
+      '<button class="del" data-act="eliminaModello" data-id="'+m.id+'">Elimina</button></div></div>').join('');
+  }).join('');
+  const ph=$('#phList');
+  if(ph && !ph.innerHTML){
+    const vis2={}; Object.keys(SEGNAPOSTO).forEach(k=>{ const d=SEGNAPOSTO[k][0]; (vis2[d]=vis2[d]||[]).push(k); });
+    ph.innerHTML=Object.keys(vis2).map(d=>'<div>'+vis2[d].map(k=>'<code>{'+k+'}</code>').join(' ')+' — '+esc(d)+'</div>').join('')+
+      '<div><code>{…….,00}</code> — spese legali (qualunque segnaposto senza lettere)</div>'+
+      '<div><code>Como, 19/11/2026</code> — la data in testa viene aggiornata a quella della lettera</div>'+
+      '<div><code>CAP COMUNE</code> — CAP e comune della sede</div>'+
+      '<div>Frase «'+esc(FRASE_PDR)+'» — sostituita se il credito deriva da fatture insolute</div>';
+  }
+}
+async function salvaFile(nome, blob){
+  if(IN_ARTEFATTO){
+    const dl=await downloadsPronto;
+    if(!dl){ alert('Il salvataggio dei file non è disponibile in questa vista.'); return false; }
+    try{ await dl.save({filename:nome, data:blob}); return true; }
+    catch(err){ const c=err&&err.code; if(c!=='declined') alert('Salvataggio non riuscito: '+((err&&err.message)||c||err)); return false; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  return true;
+}
+
+/* ================================================================
+   v1.4 — GENERA LETTERA DI MESSA IN MORA
+   ================================================================ */
+function valoriLettera(p){
+  const t=totali(p), d=p.debitore;
+  const fatt=(p.fatture||[]).filter(f=>num(f.importo)-num(f.pagato)>0)
+    .map(f=>'fattura n. '+(f.numero||'—')+(f.data?' del '+fmtData(f.data):'')+' di '+fmtEuro(num(f.importo)-num(f.pagato))).join('; ');
+  const ric=p.riconoscimento||{};
+  const conPdr = ric.presente && /piano|pdr|rientro/i.test(ric.nota||'');
+  return { data:fmtData(oggi()), debitore:d.nome||'', pec:d.pec||'', via:d.indirizzo||'', cap:d.cap||'', comune:d.sede||'',
+    debito:fmtEuro(t.residuo).replace(/^−?€\s*/,''), spese:'', piva:d.piva||'', codice:p.codice||'', forma:d.forma||'',
+    giorni:+(p.fasi.mora.giorni)||GIORNI_MORA_DEFAULT, fatture:fatt, causa: conPdr?'pdr':'fatture' };
+}
+function verificheLettera(p, v){
+  const out=[], nome=(v.debitore||'').toUpperCase();
+  if(!v.spese) out.push('Interessi e spese legali lasciati in bianco '+SPESE_VUOTE+' (evidenziati in giallo): li decide l\'avvocato.');
+  if(/LIQUIDAZION/.test(nome)) out.push('Società in liquidazione: valutare l\'intestazione «alla c.a. del liquidatore».');
+  if(p.debitore.forma==='S.n.c.' || /\bS\.?\s?N\.?\s?C\b/.test(nome)) out.push('S.n.c.: i soci rispondono illimitatamente (art. 2291 c.c.), valutare l\'invio anche ai soci.');
+  if(p.debitore.forma==='S.a.s.' || /\bS\.?\s?A\.?\s?S\b/.test(nome)) out.push('S.a.s.: valutare l\'invio anche al socio accomandatario (art. 2313 c.c.).');
+  if(!v.pec) out.push('PEC del debitore mancante.');
+  if(!v.via || !v.cap || !v.comune) out.push('Indirizzo della sede incompleto (via, CAP o comune).');
+  if(!(dovuto(p)>0)) out.push('Importo dovuto pari a zero: compilare fatture o importo.');
+  if(v.causa==='pdr' && !(p.riconoscimento&&p.riconoscimento.presente)) out.push('Scelta la frase sul piano di rientro ma nella scheda non risulta un riconoscimento di debito.');
+  return out;
+}
+function campoM(id,label,val,extra){ return '<label class="field"><span>'+esc(label)+'</span><input id="'+id+'" value="'+esc(val)+'" '+(extra||'')+'></label>'; }
+function apriGeneraMora(){
+  const p=getPos(openId); if(!p) return;
+  const mm=modelliVisibili().filter(m=>m.tipo==='mora');
+  const v=valoriLettera(p);
+  let body;
+  if(!mm.length){
+    body='<div class="verif">Nessun modello di tipo «Lettera di messa in mora». Caricalo nella sezione <b>📄 Modelli</b> (file .docx dello Studio)'+
+      (IN_ARTEFATTO?'':' oppure collega la cartella del gestionale: i .docx in <b>'+CARTELLA_MODELLI+'</b> vengono letti in automatico')+'.</div>';
+    $('#modal').innerHTML='<div class="box"><div class="mh"><h2>📄 Genera lettera di messa in mora</h2><button class="p-close" data-act="chiudiModal">✕</button></div>'+
+      '<div class="mb">'+body+'</div><div class="mf"><button class="btn-out" data-act="chiudiModal">Chiudi</button>'+
+      '<button class="btn-ind" data-act="vaiModelli">Vai ai modelli</button></div></div>';
+    $('#modal').classList.remove('hidden'); return;
+  }
+  body='<div class="grid">'+
+    '<label class="field"><span>Modello</span><select id="gm-modello">'+mm.map(m=>'<option value="'+m.id+'">'+esc(m.nome)+'</option>').join('')+'</select></label>'+
+    campoM('gm-data','Data della lettera',v.data,'placeholder="gg/mm/aaaa"')+
+    campoM('gm-debitore','Debitore (come in visura)',v.debitore)+
+    campoM('gm-pec','PEC',v.pec)+
+    campoM('gm-via','Indirizzo sede (via e civico)',v.via)+
+    campoM('gm-cap','CAP',v.cap,'maxlength="5"')+
+    campoM('gm-comune','Comune (prov.)',v.comune)+
+    campoM('gm-debito','Importo dovuto (€)',v.debito)+
+    campoM('gm-spese','Interessi e spese legali (€)','','placeholder="vuoto = [……..] in giallo"')+
+  '</div>'+
+  '<div class="field"><span>Causa del credito</span><div class="radio-row">'+
+    '<label><input type="radio" name="gm-causa" value="fatture"'+(v.causa==='fatture'?' checked':'')+'> Fatture insolute: «…'+esc(FRASE_FATTURE)+'»</label>'+
+    '<label><input type="radio" name="gm-causa" value="pdr"'+(v.causa==='pdr'?' checked':'')+'> Piano di rientro non rispettato (testo del modello)</label>'+
+  '</div></div>'+
+  '<label class="check" style="padding-top:0"><input type="checkbox" id="gm-anagrafica" checked> Aggiorna l\'anagrafica della posizione con i dati modificati qui</label>'+
+  '<div id="gm-esito"></div>';
+  $('#modal').innerHTML='<div class="box"><div class="mh"><h2>📄 Genera lettera di messa in mora · '+esc(p.codice)+'</h2>'+
+    '<button class="p-close" data-act="chiudiModal">✕</button></div><div class="mb">'+body+'</div>'+
+    '<div class="mf"><button class="btn-out" data-act="chiudiModal">Annulla</button>'+
+    '<button class="btn-ind" data-act="eseguiGeneraMora">⬇ Genera e scarica .docx</button></div></div>';
+  $('#modal').classList.remove('hidden');
+}
+async function eseguiGeneraMora(btn){
+  const p=getPos(openId); if(!p) return;
+  const m=(modelli||[]).find(x=>x.id===$('#gm-modello').value); if(!m) return;
+  const g=id=>$('#'+id).value.trim();
+  const v=Object.assign(valoriLettera(p), {data:g('gm-data'), debitore:g('gm-debitore'), pec:g('gm-pec'), via:g('gm-via'),
+    cap:g('gm-cap'), comune:g('gm-comune'), debito:g('gm-debito'), spese:g('gm-spese'),
+    causa:(document.querySelector('input[name="gm-causa"]:checked')||{}).value||'fatture'});
+  v.causaFrase = v.causa==='fatture' ? FRASE_FATTURE : FRASE_PDR;
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v.data)){ alert('Data della lettera nel formato gg/mm/aaaa.'); return; }
+  if(!v.debitore || !v.debito){ alert('Debitore e importo sono obbligatori.'); return; }
+  btn.disabled=true; btn.textContent='Generazione…';
+  try{
+    const {blob, rep}=await compilaDocx(m.buf, v);
+    const verif=verificheLettera(p, v);
+    if(rep.ignoti.size) verif.push('Segnaposto non riconosciuti, rimasti nel testo: '+Array.from(rep.ignoti).join(', '));
+    if(rep.vuoti.size) verif.push('Dati mancanti (in giallo «[…]»): '+Array.from(rep.vuoti).join(', '));
+    if(v.causa==='fatture' && !rep.causa) verif.push('Il modello non contiene la frase sul piano di rientro: la causa del credito non è stata modificata, controllarla.');
+    const testo=rep.testo||'';
+    if(testo.toLowerCase().indexOf(v.debitore.toLowerCase())<0) verif.push('Il nome del debitore non compare nella lettera: controllare i segnaposto del modello.');
+    if(testo.indexOf(v.debito)<0) verif.push('L\'importo non compare nella lettera: controllare i segnaposto del modello.');
+    const nomeFile='messa in mora_'+v.debitore.replace(/[<>:"/\\|?*]/g,'_').trim()+'.docx';
+    const ok=await salvaFile(nomeFile, blob);
+    if(!ok){ btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx'; return; }
+    if($('#gm-anagrafica').checked){
+      Object.assign(p.debitore,{nome:v.debitore, pec:v.pec, indirizzo:v.via, cap:v.cap, sede:v.comune});
+    }
+    p.eventi.push({data:oggi(), testo:'Lettera di messa in mora generata ('+nomeFile+', modello «'+m.nome+'»): da verificare e inviare'});
+    save(); renderAll();
+    $('#gm-esito').innerHTML='<div class="okbox">✓ Lettera generata: <b>'+esc(nomeFile)+'</b>. Registrata negli eventi della posizione.'+
+      (p.cartella?'<br>Spostarla nella cartella pratica: '+esc(p.cartella):'')+'</div>'+
+      (verif.length?'<div class="verif"><b>Punti da verificare prima dell\'invio</b><ul>'+verif.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'');
+    btn.textContent='✓ Generata';
+    const ann=$('#modal .mf .btn-out'); if(ann) ann.textContent='Chiudi';
+  }catch(e){
+    alert('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx';
+  }
+}
+function chiudiModal(){ $('#modal').classList.add('hidden'); $('#modal').innerHTML=''; }
+
 /* ---------------- eventi ---------------- */
 document.addEventListener('click', e=>{
   const t=e.target.closest('[data-act]');
   const inMenu=e.target.closest('#menu');
   if(!e.target.closest('.menu-wrap')) $('#menu').classList.add('hidden');
+  if(!e.target.closest('#popNote') && !(t && t.dataset.act==='note') && !$('#popNote').classList.contains('hidden')) chiudiPopNote();
+  if(e.target.id==='modal'){ chiudiModal(); return; }
   if(!t) return;
   const act=t.dataset.act;
+
+  /* v1.4: note con data */
+  if(act==='note'){ e.stopPropagation(); apriPopNote(t.dataset.id, t.closest('td')||t); return; }
+  if(act==='notaChiudi'){ chiudiPopNote(); return; }
+  if(act==='notaSalva'){ salvaNota(t.dataset.pos, t.dataset.ctx, t.closest('.nform')); return; }
+  if(act==='notaModifica'||act==='notaAnnulla'){ const p=getPos(t.dataset.pos); if(!p) return;
+    notaAperta={posId:p.id, editId:act==='notaModifica'?t.dataset.n:null, ctx:t.dataset.ctx}; ridisegnaEditorNote(p, t.dataset.ctx);
+    const box=document.querySelector(t.dataset.ctx==='pop'?'#popNote .nf-testo':'#panelNote .nf-testo'); if(box) box.focus(); return; }
+  if(act==='notaElimina'||act==='notaFatta'){ const p=getPos(t.dataset.pos); if(!p) return;
+    const n=p.annotazioni.find(x=>x.id===t.dataset.n); if(!n) return;
+    if(act==='notaElimina'){ if(!confirm('Eliminare la nota?\n«'+n.testo+'»')) return; p.annotazioni=p.annotazioni.filter(x=>x!==n); }
+    else n.fatta=!n.fatta;
+    save(); renderKpis(); renderTable(); aggiornaScadenzePanel(); ridisegnaEditorNote(p, t.dataset.ctx); return; }
+  /* v1.4: modelli e lettere */
+  if(act==='generaMora'){ apriGeneraMora(); return; }
+  if(act==='eseguiGeneraMora'){ eseguiGeneraMora(t); return; }
+  if(act==='chiudiModal'){ chiudiModal(); return; }
+  if(act==='vaiModelli'){ chiudiModal(); closePanel(); setView('modelli'); return; }
+  if(act==='caricaModello'){ $('#modFile').click(); return; }
+  if(act==='scaricaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(m) salvaFile(m.fileName, new Blob([m.buf])); return; }
+  if(act==='segnapostoModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(!m) return;
+    segnapostoDelModello(m.buf).then(l=>{ const el=$('#ph-'+m.id); if(el) el.innerHTML='Segnaposto trovati: '+(l.length?l.map(x=>'<code>'+esc(x)+'</code>').join(' '):'nessuno'); })
+      .catch(err=>alert(err.message)); return; }
+  if(act==='eliminaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(!m) return;
+    if(!confirm('Eliminare il modello «'+m.nome+'» dal gestionale?'+(m.origine==='cartella'?'\n(Il file resta nella cartella '+CARTELLA_MODELLI+': per eliminarlo del tutto toglierlo anche da lì.)':''))) return;
+    (async()=>{ if(m.origine==='cartella'){ m.nascosto=true; m.buf=null; await idbModello('put', m); }
+      else { modelli=modelli.filter(x=>x!==m); await idbModello('del', m.id); }
+      renderModelli(); toast('Modello eliminato'); })(); return; }
 
   if(act==='menu'){ $('#menu').classList.toggle('hidden'); return; }
   if(act==='nuova'){ $('#menu').classList.add('hidden'); nuova(); return; }
@@ -1389,6 +2096,7 @@ document.addEventListener('click', e=>{
     renderTable(); return; }
   if(act==='fase'){ filtri.fase=+t.dataset.f; renderChips(); renderTable(); return; }
   if(act==='avanza'){ const p=getPos(openId); if(p) avanzaFase(p); return; }
+  if(act==='indietroFase'){ const p=getPos(openId); if(p) indietroFase(p); return; }
   if(act==='elimina'){ if(openId) elimina(openId); return; }
   if(act==='vaiFase'){ const el=$('#fase-'+t.dataset.key); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
   if(act==='addEvento'){
@@ -1452,6 +2160,7 @@ document.addEventListener('input', e=>{
   if(el.id==='search'){ filtri.q=el.value; renderTable(); return; }
   if(el.id==='searchCom'){ filtriCom.q=el.value; renderCom(); return; }
   if(el.id==='statoFilter'){ filtri.stato=el.value; renderChips(); renderTable(); return; }
+  if(el.dataset && el.dataset.act==='tipoModello'){ const m=(modelli||[]).find(x=>x.id===el.dataset.id); if(m){ m.tipo=el.value; idbModello('put',m).then(renderModelli); } return; }
   if(!el.dataset || !el.dataset.path) return;
   const p=getPos(openId); if(!p) return;
   let v;
@@ -1479,7 +2188,11 @@ document.addEventListener('input', e=>{
 });
 
 $('#overlay').addEventListener('click', closePanel);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); });
+document.addEventListener('keydown', e=>{ if(e.key!=='Escape') return;
+  if(!$('#modal').classList.contains('hidden')){ chiudiModal(); return; }
+  if(!$('#popNote').classList.contains('hidden')){ chiudiPopNote(); return; }
+  closePanel(); });
+$('#modFile').addEventListener('change', e=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; if(fs.length) aggiungiModelli(fs); });
 
 $('#importFile').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
