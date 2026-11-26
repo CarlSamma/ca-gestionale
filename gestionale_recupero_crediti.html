@@ -350,6 +350,27 @@ tbody td:first-child .bold{white-space:nowrap}
 .mail-txt{white-space:pre-wrap;font:12.5px/1.45 inherit;background:var(--grey-l);border-radius:8px;padding:10px 12px;max-height:360px;overflow:auto;margin:4px 0 0}
 .com-gmail{font-size:12px;color:var(--indigo)}
 .com-all{font-size:12px;color:var(--mut);margin-top:5px}
+/* v1.5 */
+.attesa-sel{border:1px solid var(--line);border-radius:7px;padding:5px 6px;font-size:12.5px;font-weight:600;background:#fff;color:var(--mut);max-width:190px}
+.attesa-sel.att-ca{background:var(--amber-l);color:var(--amber);border-color:#f0d9b0}
+.attesa-sel.att-sb{background:var(--indigo-l);color:var(--indigo);border-color:#c9d2f3}
+.attesa-sel.att-deposito{background:#efe7fb;color:#6a3fb5;border-color:#dccdf3}
+.attesa-sel.att-notifica{background:var(--green-l);color:var(--green);border-color:#c9e6d6}
+.attcell .sub{margin-top:3px}
+.ag-box{width:min(860px,100%)}
+.ag-card h3{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ag-card .okbox,.ag-card .verif,.ag-diff,.ag-file{margin-top:8px}
+.ag-card ul{margin:4px 0 0 18px;padding:0;font-size:13px}
+.ag-diff{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;background:#fff}
+.ag-row{display:flex;gap:9px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+.ag-row:first-of-type{border-top:0}
+.ag-row input{margin-top:3px}
+.ag-sel{justify-content:space-between;align-items:center}.ag-sel select{max-width:55%}
+.ag-ora{color:var(--mut)}.ag-new{color:var(--indigo);font-weight:600}
+.ag-file{font-size:13px}
+.dati-ca{margin-top:10px;background:var(--grey-l);border-radius:8px;padding:9px 12px;font-size:12.5px;display:grid;gap:3px}
+.dati-ca span{color:var(--mut)}
+@media print{.attesa-sel{border:0;background:none;padding:0;appearance:none;-webkit-appearance:none}}
 </style>
 </head>
 <body>
@@ -359,7 +380,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.4</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5</div>
     </div>
   </div>
   <div class="actions">
@@ -371,6 +392,8 @@ tbody td:first-child .bold{white-space:nowrap}
       <div id="menu" class="menu hidden">
         <button data-act="collega">📁 Collega cartella (salvataggio su file)</button>
         <button data-act="ricarica">⟳ Ricarica dal file</button>
+        <button data-act="collegaPosizioni">📂 Collega cartella POSIZIONI (cartelle dei debitori)</button>
+        <button data-act="percorsoPosizioni">✎ Percorso della cartella POSIZIONI…</button>
         <button data-act="esporta">⬇ Esporta JSON</button>
         <button data-act="importa">⬆ Importa JSON</button>
         <div class="sep"></div>
@@ -402,6 +425,16 @@ tbody td:first-child .bold{white-space:nowrap}
     <option value="incassata">Chiuse – incassate</option>
     <option value="abbandonata">Chiuse – abbandonate</option>
   </select>
+  <select class="selctl" id="attesaFilter">
+    <option value="tutte">Tutte le attese</option>
+    <option value="ca">In attesa da CA</option>
+    <option value="sb">In attesa da SB</option>
+    <option value="deposito">In attesa esito deposito</option>
+    <option value="notifica">In attesa esito notifica</option>
+    <option value="">Nessuna attesa indicata</option>
+  </select>
+  <button class="btn-add" data-act="aggiornaCartelle" title="Legge le cartelle dei debitori: mail di CA, estratto conto, documenti nuovi">🔄 Aggiorna dalle cartelle</button>
+  <span id="infoCartelle" class="desc" style="margin:0"></span>
 </section>
 
 <div class="tblwrap" id="tableWrap"></div>
@@ -588,11 +621,22 @@ let dirHandle = null;     // FileSystemDirectoryHandle
 let fileOk = false;       // ultimo scrittura su file riuscita
 let pendingPerm = false;  // cartella collegata ma permesso da riconfermare
 let openId = null;
-let filtri = {q:'', fase:0, stato:'tutte', ord:'scadenza', dir:1};
+let filtri = {q:'', fase:0, stato:'tutte', attesa:'tutte', ord:'scadenza', dir:1};
 let view = 'registro';
 let filtriCom = {q:'', tipo:'tutte', pos:''};
 let comEditing = null;
 let saveTimer=null, fileTimer=null;
+/* v1.5: cartelle delle posizioni e stato della pratica */
+const BASE_POS_KEY='gestionale_ca_base_posizioni';
+const BASE_POS_DEFAULT='R:\\Como Acqua\\POSIZIONI';
+const SOTTO_MAIL='0-CORRISPONDENZA', SOTTO_EC='3-ESTRATTO CONTO';
+const RE_EC_NOME=/estratto|(?:^|[^A-Za-z])E\.?C\.?(?=[_\s.-])/i;
+const MSG_SOLO_PC='Le cartelle del computer si collegano solo dalla versione del gestionale sul PC: '+
+  'apri il file gestionale_recupero_crediti.html con Chrome o Edge.';
+const ATTESE=[['','—'],['ca','in attesa da CA'],['sb','in attesa da SB'],['deposito','in attesa esito deposito'],['notifica','in attesa esito notifica']];
+let posHandle=null;      // cartella POSIZIONI
+let esitoCartelle=null;  // ultimo resoconto di «Aggiorna»
+
 
 /* ---------------- record ---------------- */
 function codiceProssimo(){
@@ -633,7 +677,7 @@ function nuovaPosizione(){
       esecuzione:{data:'', tipo:'', nota:''}
     },
     promemoria:{data:'', testo:''},
-    note:'', annotazioni:[], cartella:'', eventi:[], storico:[]
+    note:'', annotazioni:[], cartella:'', attesa:'', eventi:[], storico:[]
   };
 }
 /* completa le posizioni salvate con versioni precedenti del gestionale */
@@ -661,6 +705,7 @@ function migraPosizione(p){
     p.debitore.sedeDivisa=true; // la divisione si tenta una sola volta: poi i campi restano come li scrive l'utente
   }
   if(!Array.isArray(p.annotazioni)) p.annotazioni=[];
+  if(typeof p.attesa!=='string') p.attesa='';
   p.annotazioni.forEach(n=>{ if(!n.id) n.id=uid(); });
   return p;
 }
@@ -1007,7 +1052,7 @@ function estraiOriginale(corpo){
 /* testo utile: dal messaggio originale in poi, senza disclaimer e righe di immagini */
 function testoUtile(corpo){
   let t=String(corpo||'').replace(/\r/g,'');
-  const i=t.search(/^\s*\**\s*(?:Da|From)\s*:?\s*\**\s*:?/im); if(i>0) t=t.slice(i);
+  const i=t.search(/^\s*\**\s*(?:Da|From)\b\s*:?\s*\**\s*:?/im); if(i>0) t=t.slice(i);
   const j=t.search(/Le informazioni, i dati e le notizie contenute/i); if(j>0) t=t.slice(0,j);
   return t.replace(/\[image:[^\]]*\]\s*(<[^>]*>)?/g,'').replace(/\n{3,}/g,'\n\n').trim();
 }
@@ -1417,6 +1462,8 @@ function mailById(id){ return posta.mail.find(m=>m.id===id); }
     $('#menuHint').innerHTML='Versione online: i dati restano salvati in questo browser. Usa <b>Esporta JSON</b> per un backup e <b>Importa JSON</b> per caricare il file <b>gestionale_ca.json</b>.';
   }
   try{ dirHandle=IN_ARTEFATTO ? null : await idbGet('dir'); }catch(e){ dirHandle=null; }
+  try{ posHandle=IN_ARTEFATTO ? null : await idbGet('posizioni'); }catch(e){ posHandle=null; }
+  if(IN_ARTEFATTO) document.querySelectorAll('#menu [data-act="collegaPosizioni"],#menu [data-act="percorsoPosizioni"],.toolbar [data-act="aggiornaCartelle"]').forEach(b=>b.remove());
   if(dirHandle){
     const perm=await permesso();
     if(perm==='granted'){ await sincronizza(); }
@@ -1425,7 +1472,7 @@ function mailById(id){ return posta.mail.find(m=>m.id===id); }
   if(!db){ db={versione:2, aggiornato:Date.now(), posizioni:[esempioPosizione()], comunicazioni:[]}; save(); }
   renderAll();
   resetComForm();
-  setTimeout(caricaModelli,0); // dopo la fine dello script: «modelli» è dichiarato più avanti
+  setTimeout(()=>{ caricaModelli(); aggiornaInfoCartelle(); },0); // dopo la fine dello script: «modelli» è dichiarato più avanti
   if(pendingPerm) aggiornaStatus('📁 Cartella collegata — conferma il permesso con «Ricarica dal file»','warn');
   else aggiornaStatus();
 })();
@@ -1496,6 +1543,7 @@ function renderChips(){
 function posizioniVista(){
   let list=posizioniPerStato().slice();
   if(filtri.fase) list=list.filter(p=>p.fase===filtri.fase);
+  if(filtri.attesa!=='tutte') list=list.filter(p=>(p.attesa||'')===filtri.attesa);
   const q=filtri.q.trim().toLowerCase();
   if(q) list=list.filter(p=>{
     const f=p.fasi||{};
@@ -1511,7 +1559,7 @@ function posizioniVista(){
     if(k==='debitore') return (p.debitore.nome||'').toLowerCase();
     if(k==='importo') return dovuto(p);
     if(k==='fase') return p.fase;
-    if(k==='stato') return p.stato;
+    if(k==='stato') return (p.attesa?'0'+(ATTESE.find(a=>a[0]===p.attesa)||['',''])[1]:'1')+(p.stato==='attiva'?'':'~'+p.stato);
     if(k==='note'){ const n=noteOrdinate(p)[0]; return n ? (n.data||'9999-99-98') : '9999-99-99'; }
     const s=prossimaScadenza(p); return s?s.data:'9999-99-99';
   };
@@ -1555,14 +1603,16 @@ function renderTable(){
       '<td>'+fmtData(dataFase)+'</td>'+
       '<td>'+scadHtml+'</td>'+
       '<td class="notecell" data-act="note" data-id="'+p.id+'">'+cellaNote(p)+'</td>'+
-      '<td><span class="pill '+esc(p.stato)+'">'+esc((STATI.find(s2=>s2[0]===p.stato)||['','?'])[1])+'</span></td>'+
+      '<td class="attcell"><select class="attesa-sel att-'+esc(p.attesa||'no')+'" data-act="attesa" data-id="'+p.id+'" title="Stato della pratica">'+
+        ATTESE.map(a=>'<option value="'+a[0]+'"'+((p.attesa||'')===a[0]?' selected':'')+'>'+a[1]+'</option>').join('')+'</select>'+
+        (p.stato!=='attiva'?'<div class="sub">'+esc((STATI.find(s2=>s2[0]===p.stato)||['','?'])[1])+'</div>':'')+'</td>'+
       '</tr>';
   });
   $('#tableWrap').innerHTML='<table><thead><tr>'+
     frec('codice','Codice')+frec('debitore','Debitore')+
     '<th class="num" data-act="ordina" data-k="importo">Importo'+(filtri.ord==='importo'?(filtri.dir===1?' ▲':' ▼'):'')+'</th>'+
-    frec('fase','Fase')+'<th data-act="ordina" data-k="scadenza">Prossima scadenza'+(filtri.ord==='scadenza'?(filtri.dir===1?' ▲':' ▼'):'')+'</th>'+
-    '<th></th>'+frec('note','Note')+frec('stato','Stato')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+    frec('fase','Fase')+'<th>Data fase</th><th data-act="ordina" data-k="scadenza">Prossima scadenza'+(filtri.ord==='scadenza'?(filtri.dir===1?' ▲':' ▼'):'')+'</th>'+
+    frec('note','Note')+frec('stato','Stato')+'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 /* ---------------- rendering: pannello dettaglio ---------------- */
@@ -1760,8 +1810,9 @@ function renderDetail(){
       campo(p,'apertura','Data apertura pratica','date')+
       campo(p,'cliente','Cliente (creditore)')+
       campo(p,'cartella','Cartella pratica (percorso)')+
-    '</div>'+
+    '</div>'+htmlDatiCA(p)+
     '<div class="add-ev" style="margin-top:8px">'+
+      (IN_ARTEFATTO?'':'<button class="btn-ind" data-act="aggiornaPratica" title="Legge la cartella della pratica: mail di CA, estratto conto, documenti nuovi">🔄 Aggiorna dalla cartella</button>')+
       '<button class="btn-dark" data-act="apriCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📂 Apri cartella</button>'+
       '<button class="btn-dark" data-act="copiaCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📋 Copia percorso</button>'+
     '</div></div>'+
@@ -1798,6 +1849,22 @@ function renderDetail(){
     '<button class="btn-danger" data-act="elimina">Elimina</button>'+
   '</div>';
   $('#panel').scrollTop=scrollTop;
+}
+function htmlDatiCA(p){
+  const d=p.datiCA; let h='';
+  if(d){
+    const r=(l,v)=>v?'<div><span>'+esc(l)+'</span> '+esc(v)+'</div>':'';
+    h='<div class="dati-ca"><b>📧 Dalla mail di CA</b>'+
+      r('Mail:', fmtData(d.data)+' — '+(d.oggetto||''))+
+      r('Importo Totale Scaduto:', d.importo!=null?fmtEuro(d.importo):'non indicato')+
+      ((d.posizioni||[]).length>1?r('Posizioni:', d.posizioni.map(x=>'n. '+x.n+' '+fmtEuro(x.importo)).join(' · ')):'')+
+      r('Contratti:', (d.contratti||[]).join(' / '))+r('Tipologia utenza:', d.tipologia)+
+      r('Stato utenza:', (d.statiUtenza||[]).join(' · '))+r('Stato della Partita IVA:', d.statoPiva)+
+      '</div>';
+  }
+  if(p.cartellaLetta) h+='<div class="desc" style="margin:6px 0 0">Cartella letta il '+new Date(p.cartellaLetta).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})+
+    ' · '+Object.keys(p.cartellaIndice||{}).length+' documenti</div>';
+  return h;
 }
 /* aggiornamenti parziali del pannello durante la digitazione (senza ridisegnarlo, per non perdere il focus) */
 function aggiornaTotaliPanel(){
@@ -2021,6 +2088,7 @@ function dialogo(msg, opz){
 function conferma(msg, opz){ return dialogo(msg, opz); }
 function avviso(msg){ return dialogo(msg, {annulla:false}); }
 function toast(msg){
+  document.querySelectorAll('.toast').forEach(x=>x.remove()); // un messaggio alla volta
   const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
   document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
 }
@@ -2551,11 +2619,12 @@ function apriGeneraMora(){
     '<label><input type="radio" name="gm-causa" value="pdr"'+(v.causa==='pdr'?' checked':'')+'> Piano di rientro non rispettato (testo del modello)</label>'+
   '</div></div>'+
   '<label class="check" style="padding-top:0"><input type="checkbox" id="gm-anagrafica" checked> Aggiorna l\'anagrafica della posizione con i dati modificati qui</label>'+
+  (!IN_ARTEFATTO && posHandle && p.cartella ? '<label class="check" style="padding-top:0"><input type="checkbox" id="gm-cartella" checked> Salva nella cartella della pratica ('+esc(ultimoSegmento(p.cartella))+' › '+SOTTO_MAIL+')</label>' : '')+
   '<div id="gm-esito"></div>';
   $('#modal').innerHTML='<div class="box"><div class="mh"><h2>📄 Genera lettera di messa in mora · '+esc(p.codice)+'</h2>'+
     '<button class="p-close" data-act="chiudiModal">✕</button></div><div class="mb">'+body+'</div>'+
     '<div class="mf"><button class="btn-out" data-act="chiudiModal">Annulla</button>'+
-    '<button class="btn-ind" data-act="eseguiGeneraMora">⬇ Genera e scarica .docx</button></div></div>';
+    '<button class="btn-ind" data-act="eseguiGeneraMora">'+(!IN_ARTEFATTO && posHandle && p.cartella?'💾 Genera la lettera .docx':'⬇ Genera e scarica .docx')+'</button></div></div>';
   $('#modal').classList.remove('hidden');
 }
 async function eseguiGeneraMora(btn){
@@ -2568,7 +2637,10 @@ async function eseguiGeneraMora(btn){
   v.causaFrase = v.causa==='fatture' ? FRASE_FATTURE : FRASE_PDR;
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v.data)){ avviso('Data della lettera nel formato gg/mm/aaaa.'); return; }
   if(!v.debitore || !v.debito){ avviso('Debitore e importo sono obbligatori.'); return; }
+  const etichetta=btn.textContent;
   btn.disabled=true; btn.textContent='Generazione…';
+  const inCartella=!!($('#gm-cartella') && $('#gm-cartella').checked);
+  if(inCartella) await permessoPos(true); // subito, finché vale il clic
   try{
     const {blob, rep}=await compilaDocx(m.buf, v);
     const verif=verificheLettera(p, v);
@@ -2578,24 +2650,570 @@ async function eseguiGeneraMora(btn){
     const testo=rep.testo||'';
     if(testo.toLowerCase().indexOf(v.debitore.toLowerCase())<0) verif.push('Il nome del debitore non compare nella lettera: controllare i segnaposto del modello.');
     if(testo.indexOf(v.debito)<0) verif.push('L\'importo non compare nella lettera: controllare i segnaposto del modello.');
-    const nomeFile='messa in mora_'+v.debitore.replace(/[<>:"/\\|?*]/g,'_').trim()+'.docx';
-    const ok=await salvaFile(nomeFile, blob);
-    if(!ok){ btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx'; return; }
+    const nomeFile='messa in mora_'+v.debitore.replace(/[<>:"/\\|?*]/g,'_').trim().replace(/[.\s]+$/,'')+'.docx';
+    let salvato=null;
+    if(inCartella){
+      try{ const dest=await cartellaPratica(p, SOTTO_MAIL, false);
+        if(dest){ const r=await scriviInCartella(dest.h, nomeFile, blob);
+          salvato=dest.rel+'\\'+SOTTO_MAIL+'\\'+r.nome;
+          if(p.cartellaIndice) p.cartellaIndice[SOTTO_MAIL+'/'+r.nome]=r.mod; }
+        else verif.unshift('Cartella della pratica non raggiungibile: la lettera è stata scaricata invece che salvata nella cartella.'); }
+      catch(err){ verif.unshift('Salvataggio nella cartella non riuscito ('+err.message+'): la lettera è stata scaricata.'); }
+    }
+    if(!salvato){ const ok=await salvaFile(nomeFile, blob);
+      if(!ok){ btn.disabled=false; btn.textContent=etichetta; return; } }
     if($('#gm-anagrafica').checked){
       Object.assign(p.debitore,{nome:v.debitore, pec:v.pec, indirizzo:v.via, cap:v.cap, sede:v.comune});
     }
-    p.eventi.push({data:oggi(), testo:'Lettera di messa in mora generata ('+nomeFile+', modello «'+m.nome+'»): da verificare e inviare'});
+    p.eventi.push({data:oggi(), testo:'Lettera di messa in mora generata ('+(salvato||nomeFile)+', modello «'+m.nome+'»): da verificare e inviare'});
     save(); renderAll();
-    $('#gm-esito').innerHTML='<div class="okbox">✓ Lettera generata: <b>'+esc(nomeFile)+'</b>. Registrata negli eventi della posizione.'+
-      (p.cartella?'<br>Spostarla nella cartella pratica: '+esc(p.cartella):'')+'</div>'+
+    $('#gm-esito').innerHTML='<div class="okbox">✓ Lettera generata'+(salvato?' e salvata in <b>'+esc(basePosizioni()+'\\'+salvato)+'</b>':': <b>'+esc(nomeFile)+'</b>')+'. Registrata negli eventi della posizione.'+
+      (!salvato && p.cartella?'<br>Spostarla nella cartella pratica: '+esc(p.cartella):'')+'</div>'+
       (verif.length?'<div class="verif"><b>Punti da verificare prima dell\'invio</b><ul>'+verif.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'');
     btn.textContent='✓ Generata';
     const ann=$('#modal .mf .btn-out'); if(ann) ann.textContent='Chiudi';
   }catch(e){
-    avviso('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx';
+    avviso('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent=etichetta;
   }
 }
 function chiudiModal(){ $('#modal').classList.add('hidden'); $('#modal').innerHTML=''; }
+
+/* ================================================================
+   v1.5 — CARTELLE DELLE POSIZIONI (es. R:\Como Acqua\POSIZIONI\<debitore>)
+   Ogni posizione ha la sua cartella: «Aggiorna» legge la prima mail di CA in
+   0-CORRISPONDENZA (.msg/.eml), l'estratto conto in 3-ESTRATTO CONTO (.xlsx)
+   e segnala i documenti nuovi. La messa in mora si salva in 0-CORRISPONDENZA.
+   ================================================================ */
+function basePosizioni(){ try{ return localStorage.getItem(BASE_POS_KEY)||BASE_POS_DEFAULT; }catch(e){ return BASE_POS_DEFAULT; } }
+function impostaBasePosizioni(v){ try{ localStorage.setItem(BASE_POS_KEY, String(v||'').trim().replace(/[\\/]+$/,'')||BASE_POS_DEFAULT); }catch(e){} }
+async function permessoPos(chiedi){
+  if(!posHandle) return false;
+  try{
+    let s=await posHandle.queryPermission({mode:'readwrite'});
+    if(s!=='granted' && chiedi) s=await posHandle.requestPermission({mode:'readwrite'});
+    return s==='granted';
+  }catch(e){ return false; }
+}
+async function collegaPosizioni(){
+  if(IN_ARTEFATTO){ avviso(MSG_SOLO_PC); return false; }
+  if(!window.showDirectoryPicker){ avviso('Il browser non permette di collegare cartelle: usa Chrome o Edge.'); return false; }
+  try{
+    const h=await window.showDirectoryPicker({mode:'readwrite', id:'posizioni-ca'});
+    posHandle=h; try{ await idbSet('posizioni',h); }catch(e){}
+    toast('Cartella delle posizioni collegata: '+h.name);
+    if(!/POSIZION/i.test(h.name)) avviso('La cartella scelta si chiama «'+h.name+'».\nDeve essere quella che contiene le cartelle dei debitori (es. '+BASE_POS_DEFAULT+').');
+    aggiornaInfoCartelle();
+    return true;
+  }catch(err){ if(err && err.name!=='AbortError') avviso('Impossibile collegare la cartella:\n'+err.message); return false; }
+}
+/* da chiamare all'inizio di un clic: chiede il permesso finché il clic è ancora «fresco» */
+async function prontaPosizioni(){
+  if(IN_ARTEFATTO){ avviso(MSG_SOLO_PC); return false; }
+  if(posHandle && await permessoPos(true)) return true;
+  return collegaPosizioni();
+}
+function aggiornaInfoCartelle(){
+  const el=$('#infoCartelle'); if(!el) return;
+  el.textContent = IN_ARTEFATTO ? '' : (posHandle ? '📁 '+basePosizioni() : 'Cartella posizioni non collegata');
+}
+
+/* ---------- abbinamento posizione ↔ cartella ---------- */
+async function elencoCartelle(){
+  const out=[];
+  for await (const [nome,h] of posHandle.entries()){
+    if(h.kind!=='directory') continue;
+    if(/^#.*#$/.test(nome)){ // raggruppamenti: #CON DECRETI EMESSI#, #CONCORSUALE#, #DEFINITI-ARCHIVIATO#…
+      if(/MODELLI/i.test(nome)) continue;
+      for await (const [n2,h2] of h.entries()) if(h2.kind==='directory') out.push({rel:nome+'\\'+n2, nome:n2, categoria:nome, h:h2});
+    } else out.push({rel:nome, nome, categoria:'', h});
+  }
+  return out.sort((a,b)=>a.rel.localeCompare(b.rel,'it'));
+}
+function percorsoCartella(c){ return basePosizioni()+'\\'+c.rel; }
+function relDaPercorso(path){
+  const t=String(path||'').trim().replace(/\//g,'\\').replace(/\\+$/,''); if(!t) return '';
+  const b=basePosizioni().replace(/\\+$/,'');
+  return t.toLowerCase().indexOf(b.toLowerCase()+'\\')===0 ? t.slice(b.length+1) : '';
+}
+function ultimoSegmento(path){ return String(path||'').replace(/[\\\/]+$/,'').split(/[\\\/]/).pop()||''; }
+function cartellaDi(p, cartelle, usate){
+  const libera=c=>!usate || !usate.has(c.rel) || usate.get(c.rel)===p.id;
+  const rel=relDaPercorso(p.cartella);
+  if(rel){ const c=cartelle.find(x=>x.rel.toLowerCase()===rel.toLowerCase()); if(c) return {c, come:'percorso'}; }
+  const ult=ultimoSegmento(p.cartella).toLowerCase();
+  if(ult){ const c=cartelle.find(x=>x.nome.toLowerCase()===ult && libera(x)); if(c) return {c, come:rel?'cartella spostata in '+(c.categoria||'POSIZIONI'):'nome della cartella'}; }
+  const k=chiaveNome(p.debitore.nome);
+  if(k.length>=4){
+    let cc=cartelle.filter(x=>chiaveNome(x.nome)===k && libera(x));
+    if(cc.length===1) return {c:cc[0], come:'denominazione'};
+    cc=cartelle.filter(x=>{ const kx=chiaveNome(x.nome); return kx.length>=5 && (kx.indexOf(k)===0 || k.indexOf(kx)===0) && libera(x); });
+    if(cc.length===1) return {c:cc[0], come:'denominazione simile'};
+  }
+  return null;
+}
+async function handleDaRel(rel){
+  let h=posHandle;
+  for(const seg of rel.split('\\').filter(Boolean)) h=await h.getDirectoryHandle(seg);
+  return h;
+}
+async function scandisci(dh, pref, out, prof){
+  for await (const [nome,h] of dh.entries()){
+    if(/^~\$|^\.|^thumbs\.db$|^desktop\.ini$/i.test(nome)) continue;
+    const rel=pref?pref+'/'+nome:nome;
+    if(h.kind==='directory'){ if(prof<5) await scandisci(h, rel, out, prof+1); }
+    else { try{ const f=await h.getFile(); out.push({rel, nome, h, f, size:f.size, mod:f.lastModified}); }catch(e){} }
+  }
+  return out;
+}
+
+/* ---------- lettura dei file .msg di Outlook (formato OLE/CFB) ---------- */
+function cfbLeggi(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  if(u8.length<512 || dv.getUint32(0,true)!==0xE011CFD0 || dv.getUint32(4,true)!==0xE11AB1A1) throw new Error('non è un file .msg di Outlook');
+  const FINE=0xFFFFFFFA;
+  const ss=1<<dv.getUint16(30,true), mss=1<<dv.getUint16(32,true);
+  const dir0=dv.getUint32(48,true), cutoff=dv.getUint32(56,true), mf0=dv.getUint32(60,true), difat0=dv.getUint32(68,true);
+  const off=s=>(s+1)*ss;
+  const difat=[]; for(let i=0;i<109;i++){ const v=dv.getUint32(76+i*4,true); if(v<FINE) difat.push(v); }
+  for(let ds=difat0, g=0; ds<FINE && g<100000 && off(ds)+ss<=u8.length; g++){
+    for(let i=0;i<ss/4-1;i++){ const v=dv.getUint32(off(ds)+i*4,true); if(v<FINE) difat.push(v); }
+    ds=dv.getUint32(off(ds)+ss-4,true);
+  }
+  const per=ss/4, fat=new Uint32Array(difat.length*per);
+  difat.forEach((s,k)=>{ if(off(s)+ss<=u8.length) for(let i=0;i<per;i++) fat[k*per+i]=dv.getUint32(off(s)+i*4,true); });
+  const catena=(s,tab)=>{ const out=[]; for(let g=0; s<FINE && s<tab.length && g<=tab.length; g++){ out.push(s); s=tab[s]; } return out; };
+  const leggiCatena=(s,size)=>{ const c=catena(s,fat), r=new Uint8Array(c.length*ss);
+    c.forEach((x,i)=>r.set(u8.subarray(off(x),Math.min(off(x)+ss,u8.length)),i*ss)); return size==null?r:r.subarray(0,Math.min(size,r.length)); };
+  const dirB=leggiCatena(dir0,null), ddv=new DataView(dirB.buffer, dirB.byteOffset, dirB.byteLength);
+  const voci=[];
+  for(let o=0;o+128<=dirB.length;o+=128){
+    const nl=Math.min(64, ddv.getUint16(o+64,true)); let nome='';
+    for(let i=0;i<nl/2-1;i++) nome+=String.fromCharCode(ddv.getUint16(o+i*2,true));
+    voci.push({nome, tipo:dirB[o+66], sx:ddv.getUint32(o+68,true), dx:ddv.getUint32(o+72,true), figlio:ddv.getUint32(o+76,true),
+      start:ddv.getUint32(o+116,true), size:ddv.getUint32(o+120,true)});
+  }
+  const root=voci[0]; if(!root) throw new Error('file .msg vuoto');
+  const mini=root.start<FINE ? leggiCatena(root.start, root.size) : new Uint8Array(0);
+  const mfB=mf0<FINE ? leggiCatena(mf0,null) : new Uint8Array(0), mfd=new DataView(mfB.buffer, mfB.byteOffset, mfB.byteLength);
+  const minifat=new Uint32Array(mfB.length/4); for(let i=0;i<minifat.length;i++) minifat[i]=mfd.getUint32(i*4,true);
+  function stream(v){
+    if(v.size<cutoff){ const c=catena(v.start,minifat), r=new Uint8Array(c.length*mss);
+      c.forEach((x,i)=>r.set(mini.subarray(x*mss,(x+1)*mss),i*mss)); return r.subarray(0,v.size); }
+    return leggiCatena(v.start, v.size);
+  }
+  function figli(i){ const out={}, visti=new Set();
+    const vis=k=>{ if(k>=voci.length || visti.has(k)) return; visti.add(k); const v=voci[k]; out[v.nome]=k; vis(v.sx); vis(v.dx); };
+    vis(voci[i].figlio); return out; }
+  return {voci, stream, figli};
+}
+function htmlATesto(html){
+  const t=String(html||'').replace(/<(?:br|\/p|\/div|\/li|\/tr|\/h\d)\b[^>]*>/gi,'\n').replace(/<li\b[^>]*>/gi,'\n*\t');
+  const d=new DOMParser().parseFromString(t,'text/html'); return (d.body?d.body.textContent:'').replace(/\n{3,}/g,'\n\n');
+}
+function msgLeggi(buf){
+  const c=cfbLeggi(buf), d16=new TextDecoder('utf-16le');
+  const root=c.figli(0);
+  const str=(fig,id)=>{ let k=fig['__substg1.0_'+id+'001F']; if(k!=null) return d16.decode(c.stream(c.voci[k])).replace(/\0+$/,'');
+    k=fig['__substg1.0_'+id+'001E']; if(k!=null) return new TextDecoder('windows-1252').decode(c.stream(c.voci[k])).replace(/\0+$/,''); return ''; };
+  const bin=(fig,id)=>{ const k=fig['__substg1.0_'+id+'0102']; return k!=null ? c.stream(c.voci[k]) : null; };
+  let corpo=str(root,'1000');
+  if(!corpo.trim()){ const h=bin(root,'1013'); const html=h?new TextDecoder().decode(h):str(root,'1013'); if(html) corpo=htmlATesto(html); }
+  let data='';
+  const kp=root['__properties_version1.0'];
+  if(kp!=null){ // PR_CLIENT_SUBMIT_TIME (0x0039) o PR_MESSAGE_DELIVERY_TIME (0x0E06), FILETIME
+    const b=c.stream(c.voci[kp]), d=new DataView(b.buffer, b.byteOffset, b.byteLength), tempi={};
+    for(let o=32;o+16<=b.length;o+=16){ const tag=d.getUint32(o,true);
+      if((tag&0xFFFF)===0x0040){ const ms=(d.getUint32(o+12,true)*4294967296+d.getUint32(o+8,true))/10000-11644473600000; tempi[tag>>>16]=ms; } }
+    const ms=tempi[0x0039]||tempi[0x0E06]||tempi[0x3007]; if(ms>0) data=iso(new Date(ms));
+  }
+  const allegati=[];
+  Object.keys(root).filter(n=>/^__attach_version1\.0_#/.test(n)).forEach(n=>{ const f=c.figli(root[n]);
+    const nome=str(f,'3707')||str(f,'3704'); if(nome) allegati.push({nome, dati:()=>bin(f,'3701')}); });
+  return {oggetto:str(root,'0037'), mittente:str(root,'0C1A'), email:str(root,'5D01')||str(root,'0C1F')||str(root,'0065'), data, corpo, allegati};
+}
+/* ---------- lettura dei file .eml (anche PEC) ---------- */
+function latinDaBytes(u8){ let s=''; for(let i=0;i<u8.length;i+=8192) s+=String.fromCharCode.apply(null, u8.subarray(i,i+8192)); return s; }
+function bytesDaLatin(s){ const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i)&255; return u; }
+function decodificaMime(s){
+  return String(s||'').replace(/\?=\s+=\?/g,'?==?').replace(/=\?([^?]+)\?([BQ])\?([^?]*)\?=/gi,(m,cs,enc,txt)=>{
+    try{ const raw = enc.toUpperCase()==='B' ? atob(txt) : txt.replace(/_/g,' ').replace(/=([0-9A-F]{2})/gi,(x,h)=>String.fromCharCode(parseInt(h,16)));
+      return new TextDecoder(cs).decode(bytesDaLatin(raw)); }catch(e){ return txt; } });
+}
+function mimeParti(raw, prof){
+  const i=raw.search(/\r?\n\r?\n/);
+  const head=(i<0?raw:raw.slice(0,i)).replace(/\r?\n[ \t]+/g,' ');
+  const body=i<0?'':raw.slice(i).replace(/^\r?\n\r?\n/,'');
+  const hv=n=>{ const m=head.match(new RegExp('^'+n+':[ \\t]*(.*)$','im')); return m?m[1].trim():''; };
+  const ct=hv('Content-Type')||'text/plain';
+  const bm=ct.match(/boundary\s*=\s*"?([^";]+)"?/i);
+  if(/^multipart\//i.test(ct) && bm && (prof||0)<8){
+    const sep=new RegExp('\\r?\\n?--'+bm[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:--)?[ \\t]*(?:\\r?\\n|$)');
+    return [].concat(...body.split(sep).slice(1).filter(x=>x.trim()).map(x=>mimeParti(x,(prof||0)+1)));
+  }
+  if(/^message\/rfc822/i.test(ct) && (prof||0)<8) return mimeParti(body,(prof||0)+1);
+  return [{ct, enc:hv('Content-Transfer-Encoding').toLowerCase(), disp:hv('Content-Disposition'), body}];
+}
+function decodificaParte(pt){
+  let b=pt.body;
+  if(pt.enc==='base64'){ try{ b=atob(b.replace(/[^A-Za-z0-9+/=]/g,'')); }catch(e){} }
+  else if(pt.enc==='quoted-printable') b=b.replace(/=\r?\n/g,'').replace(/=([0-9A-F]{2})/gi,(m,h)=>String.fromCharCode(parseInt(h,16)));
+  const cs=(pt.ct.match(/charset\s*=\s*"?([^";\s]+)"?/i)||[])[1]||'utf-8';
+  try{ return new TextDecoder(cs).decode(bytesDaLatin(b)); }catch(e){ return b; }
+}
+function emlLeggi(buf){
+  const raw=latinDaBytes(new Uint8Array(buf));
+  const i=raw.search(/\r?\n\r?\n/), head=(i<0?raw:raw.slice(0,i)).replace(/\r?\n[ \t]+/g,' ');
+  const hv=n=>{ const m=head.match(new RegExp('^'+n+':[ \\t]*(.*)$','im')); return m?decodificaMime(m[1].trim()):''; };
+  const parti=mimeParti(raw,0);
+  const testi=parti.filter(p=>/^text\/plain/i.test(p.ct) && !/attachment/i.test(p.disp)).map(decodificaParte);
+  let corpo=testi.sort((a,b)=>b.length-a.length)[0]||'';
+  if(!corpo){ const h=parti.find(p=>/^text\/html/i.test(p.ct)); if(h) corpo=htmlATesto(decodificaParte(h)); }
+  const allegati=parti.map(p=>{ const m=(p.disp+' '+p.ct).match(/(?:filename|name)\*?\s*=\s*"?([^";]+)"?/i); return m?decodificaMime(m[1]):''; })
+    .filter(Boolean).map(nome=>({nome, dati:()=>null}));
+  const d=new Date(hv('Date'));
+  return {oggetto:hv('Subject'), mittente:hv('From'), email:(hv('From').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/)||[''])[0],
+    data:isNaN(d)?'':iso(d), corpo, allegati};
+}
+async function leggiMailFile(x){
+  const buf=await x.f.arrayBuffer();
+  return /\.msg$/i.test(x.nome) ? msgLeggi(buf) : emlLeggi(buf);
+}
+
+/* ---------- dati della mail di CA («Nuova pratica») ---------- */
+function formaDaNome(nome){
+  const m=String(nome||'').match(/\b(S\.?\s?R\.?\s?L\.?\s?S|S\.?\s?R\.?\s?L|S\.?\s?A\.?\s?S|S\.?\s?P\.?\s?A|S\.?\s?N\.?\s?C|SOC\.?\s*COOP|S\.?\s?S\.?\s?D)\b/i);
+  return m ? normalizzaForma(m[1]) : '';
+}
+function datiMailCA(oggetto, corpo){
+  const t=String(corpo||'').replace(/\r/g,'').replace(/\u00a0/g,' ').replace(/\*(?=\S)/g,'* ');
+  const riga=re=>{ const m=t.match(re); return m?m[1].replace(/\*+/g,'').replace(/\s+/g,' ').trim():''; };
+  const tutte=re=>{ const out=[]; let m; while((m=re.exec(t))) out.push(m[1].replace(/\*+/g,'').replace(/\s+/g,' ').trim()); return out; };
+  const deb=estraiDebitoreDaOggetto(pulisciOggetto(oggetto));
+  const nome=riga(/Ragione\s+Sociale(?:\s+(?:del\s+)?Debitore)?\s*:\s*([^\n]+)/i) || deb.nome;
+  const ind=riga(/^[\s*•·-]*Indirizzo(?!\s*(?:PEC|e-?mail))[^:\n]{0,40}:\s*([^\n]+)/im);
+  let via='', cap='', comune='';
+  if(ind){
+    const pz=ind.split(/\s+[–—-]\s+/);
+    if(pz.length>=3 && /^\d{5}$/.test(pz[1].trim())){ via=pz[0].trim(); cap=pz[1].trim(); comune=pz.slice(2).join(' - ').trim(); }
+    else { const x=dividiSede(ind.replace(/\s+[–—]\s+/g,', ')); if(x){ via=x.via; cap=x.cap; comune=x.comune; } else via=ind; }
+  }
+  const pec=riga(/PEC\s*:\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i);
+  const pivaRiga=riga(/(?:Partita\s+IVA|P\.?\s?IVA)[^:\n]{0,30}:\s*([^\n]+)/i);
+  const piva=(pivaRiga.match(/\b(\d{11}|[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z])\b/i)||[''])[0].toUpperCase();
+  const statoPiva=(pivaRiga.match(/\b(ATTIVA|CESSATA|INATTIVA|SOSPESA)\b/i)||['',''])[1].toUpperCase();
+  const codici=[];
+  deb.codici.concat(...tutte(/Codic[ei]\s+Client[ei][^:\n]{0,40}:\s*([^\n]+)/gi).map(s=>s.split(/\s*[\/,;]\s*/)))
+    .map(s=>s.replace(/\s.*$/,'').trim()).filter(s=>/^[A-Z]*\d[A-Z0-9-]*$/i.test(s))
+    .forEach(s=>{ if(!codici.some(x=>x.toUpperCase()===s.toUpperCase())) codici.push(s); });
+  const contratti=Array.from(new Set(tutte(/Codice\s+Contratto\s*:\s*([^\n]+)/gi)));
+  const tipologia=Array.from(new Set(tutte(/Tipologia\s+(?:di\s+)?Utenza\s*:\s*([^\n]+)/gi))).join(' / ');
+  const statiUtenza=tutte(/Stato\s+dell['’]\s?Utenza\s*:\s*([^\n]+)/gi);
+  const imp=verificaImporti(t);
+  let importo = imp.totale!=null ? imp.totale : (imp.somma!=null ? imp.somma : null);
+  if(importo==null){ const m=t.match(/Importo\s+(?:Totale\s+)?Scaduto[^€\n]{0,60}€\s*\.?\s*(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})/i); if(m) importo=importoIt(m[1]); }
+  if(importo==null) importo=estraiImporto(t);
+  const verifiche=imp.verifiche.slice();
+  if(importo==null) verifiche.push('IMPORTO TOTALE SCADUTO non trovato nella mail: controllarla a mano');
+  if(statoPiva && statoPiva!=='ATTIVA') verifiche.push('Partita IVA indicata come '+statoPiva);
+  if(statiUtenza.some(s=>/CESSAT/i.test(s))) verifiche.push('Utenza cessata: '+statiUtenza.filter(s=>/CESSAT/i.test(s)).join('; '));
+  if(!pec) verifiche.push('PEC del debitore non indicata nella mail');
+  return {nome, forma:formaDaNome(nome), via, cap, comune, pec, piva, statoPiva, codici, contratti, tipologia, statiUtenza,
+    importo, posizioni:imp.posizioni, verifiche};
+}
+function eRicevutaFile(nome, oggetto){
+  return /^(?:ACCETTAZIONE|CONSEGNA|AVVENUTA CONSEGNA|PRESA IN CARICO|MANCATA CONSEGNA|ANOMALIA|AVVISO)\b/i.test(nome) || !!motivoScarto(oggetto||'','');
+}
+function eRisposta(nome, oggetto){ return /^(?:R|RE|RIF)[_:\s]/i.test(nome) || /^\s*(?:R|RE|RIF)\s*:/i.test(oggetto||''); }
+
+/* ---------- estratto conto .xlsx di CA ---------- */
+function colIdx(ref){ const l=String(ref||'').match(/^[A-Z]+/i); if(!l) return 0; let n=0; for(const ch of l[0].toUpperCase()) n=n*26+ch.charCodeAt(0)-64; return n-1; }
+async function xlsxLeggi(buf){
+  const z=zipLeggi(buf), txt=async n=>{ const e=z.find(x=>x.name===n); return e?zipTesto(e):''; };
+  const P=s=>new DOMParser().parseFromString(s,'application/xml');
+  const ss=[]; const sst=await txt('xl/sharedStrings.xml');
+  if(sst) Array.from(P(sst).getElementsByTagName('si')).forEach(si=>ss.push(Array.from(si.getElementsByTagName('t')).filter(t=>!t.closest||!t.closest('rPh')).map(t=>t.textContent).join('')));
+  const wb=P(await txt('xl/workbook.xml')), rels=P(await txt('xl/_rels/workbook.xml.rels'));
+  const fogli={};
+  for(const s of Array.from(wb.getElementsByTagName('sheet'))){
+    const rid=s.getAttribute('r:id')||s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    const rel=Array.from(rels.getElementsByTagName('Relationship')).find(r=>r.getAttribute('Id')===rid); if(!rel) continue;
+    let tg=rel.getAttribute('Target').replace(/^\//,''); if(!/^xl\//.test(tg)) tg='xl/'+tg;
+    const x=await txt(tg); if(!x) continue;
+    const righe=[];
+    Array.from(P(x).getElementsByTagName('row')).forEach(row=>{
+      const r=[];
+      Array.from(row.getElementsByTagName('c')).forEach(c=>{
+        const tp=c.getAttribute('t'), v=c.getElementsByTagName('v')[0]; let val=v?v.textContent:'';
+        if(tp==='s') val=ss[+val]; else if(tp==='inlineStr') val=Array.from(c.getElementsByTagName('t')).map(t=>t.textContent).join('');
+        else if(!tp || tp==='n'){ if(val!=='') val=+val; }
+        r[colIdx(c.getAttribute('r'))]=val; });
+      righe[(+row.getAttribute('r'))-1]=r; });
+    fogli[s.getAttribute('name')]=righe;
+  }
+  return fogli;
+}
+function dataDaSeriale(v){
+  if(typeof v==='number' && v>20000 && v<80000){ const d=new Date(Math.round((v-25569)*86400000));
+    return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'); }
+  const m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?m[3]+'-'+m[2]+'-'+m[1]:'';
+}
+function numCella(v){ if(typeof v==='number') return v; const s=String(v||'').trim(); if(!s) return 0;
+  return /,\d{1,2}$/.test(s)||/\.\d{3}(,|$)/.test(s) ? importoIt(s) : (+s||0); }
+async function leggiEstrattoConto(buf){
+  const fogli=await xlsxLeggi(buf);
+  const sc=fogli['Scadenzario']; if(!sc) return {errore:'foglio «Scadenzario» assente'};
+  const testa=(fogli['Scadenzario']||[]).slice(0,6).concat(fogli['Partite Contabili']||[]).slice(0,10);
+  let dataSit='', cliente='';
+  testa.forEach(r=>{ if(!r) return; const k=String(r[0]||'');
+    if(/Data situazione/i.test(k)) dataSit=dataSit||dataDaSeriale(r.find((x,i)=>i>0&&x!=null&&x!==''));
+    if(/^Cliente/i.test(k)) cliente=cliente||String(r.find((x,i)=>i>0&&x)||'').trim(); });
+  const hi=sc.findIndex(r=>r && /Data\s+Scadenza/i.test(String(r[0]||''))); if(hi<0) return {errore:'intestazione dello scadenzario non trovata'};
+  const H=sc[hi].map(x=>String(x||'').trim().toLowerCase()), col=n=>H.indexOf(n);
+  const cS=col('data scadenza'), cD=col('data partita'), cR=col('riferimento partita'), cDe=col('descrizione'), cI=col('importo'), cSa=col('saldo scadenza');
+  if(!dataSit) dataSit=oggi();
+  const fatture=[]; let scaduto=0, aScadere=0, nAScadere=0;
+  for(let i=hi+1;i<sc.length;i++){
+    const r=sc[i]; if(!r || r[cS]==null || r[cS]==='') continue;
+    const saldo=numCella(r[cSa]); if(!(saldo>0)) continue;
+    const scad=dataDaSeriale(r[cS]);
+    if(scad && scad>dataSit){ aScadere+=saldo; nAScadere++; continue; }
+    const imp=numCella(r[cI])||saldo;
+    const rata=String(r[cDe]||'').match(/^\s*Rata\s+n\.\s*(\d+)/i);
+    fatture.push({numero:(String(r[cR]||'').trim() || (String(r[cDe]||'').match(/n\.\s*([^\s,]+)/)||['',''])[1])+(rata?' rata '+rata[1]:''),
+      data:dataDaSeriale(r[cD]), scadenza:scad, importo:Math.round(imp*100)/100, pagato:Math.round((imp-saldo)*100)/100});
+    scaduto+=saldo;
+  }
+  return {dataSit, cliente, fatture, scaduto:Math.round(scaduto*100)/100, aScadere:Math.round(aScadere*100)/100, nAScadere};
+}
+
+/* ---------- aggiornamento di una posizione dalla sua cartella ---------- */
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9@]/g,'');
+const CAMPI_ANAG=[['nome','Denominazione'],['forma','Forma giuridica'],['indirizzo','Indirizzo sede'],['cap','CAP'],['sede','Comune'],['piva','P.IVA / C.F.'],['pec','PEC']];
+function allegatoUtile(n){ return !/^image\d*\.(png|jpe?g|gif)$|^(logo|facebook|instagram|linkedin|youtube|shutterstock|icona)[_\w-]*\.(png|jpe?g|gif)$/i.test(n); }
+async function aggiornaPratica(p, c){
+  const rep={p, c, fatti:[], nuovi:[], modificati:[], verifiche:[], diff:[], errori:[], primaVolta:!p.cartellaIndice || !Object.keys(p.cartellaIndice).length};
+  const percorso=percorsoCartella(c);
+  if(p.cartella!==percorso){ rep.fatti.push('Cartella collegata: '+c.rel+(p.cartella?' (prima: '+p.cartella+')':'')); p.cartella=percorso; }
+  if(c.categoria) rep.verifiche.push('La cartella è nel raggruppamento '+c.categoria+': controllare fase e stato della posizione');
+  const files=await scandisci(c.h,'',[],0);
+  const indice=p.cartellaIndice||{};
+  files.forEach(x=>{ if(!(x.rel in indice)) rep.nuovi.push(x); else if(indice[x.rel]!==x.mod) rep.modificati.push(x); });
+  const daLeggere=new Set(rep.nuovi.concat(rep.modificati).map(x=>x.rel));
+  const inMail=x=>x.rel.toUpperCase().indexOf(SOTTO_MAIL+'/')===0;
+
+  /* 1) prima mail di CA in 0-CORRISPONDENZA */
+  const mailFiles=files.filter(x=>/\.(msg|eml)$/i.test(x.nome) && (inMail(x) || x.rel.indexOf('/')<0));
+  if(!p.datiCA || mailFiles.some(x=>daLeggere.has(x.rel))){
+    const cand=[];
+    for(const x of mailFiles){
+      if(eRicevutaFile(x.nome,'')) continue;
+      try{ const m=await leggiMailFile(x); if(eRicevutaFile(x.nome,m.oggetto)) continue;
+        const ca=/nuova\s+pratica/i.test(m.oggetto) || /Ragione\s+Sociale|Importo\s+(?:Totale\s+)?Scaduto/i.test(m.corpo);
+        if(ca) cand.push({x, m, risposta:eRisposta(x.nome,m.oggetto)}); }
+      catch(e){ rep.errori.push(x.rel+': '+e.message); }
+    }
+    cand.sort((a,b)=>(a.risposta-b.risposta) || String(a.m.data||'9').localeCompare(String(b.m.data||'9')) || a.x.mod-b.x.mod);
+    const prima=cand[0];
+    if(prima && (!p.datiCA || p.datiCA.file!==prima.x.rel)){
+      const d=datiMailCA(prima.m.oggetto, prima.m.corpo);
+      applicaDatiMail(p, d, rep);
+      p.datiCA={file:prima.x.rel, oggetto:prima.m.oggetto, data:prima.m.data, mittente:prima.m.mittente, contratti:d.contratti,
+        tipologia:d.tipologia, statiUtenza:d.statiUtenza, statoPiva:d.statoPiva, importo:d.importo, posizioni:d.posizioni, letto:oggi()};
+      rep.mail=prima; rep.datiMail=d;
+      d.verifiche.forEach(v=>rep.verifiche.push(v));
+      if(!db.comunicazioni.some(k=>k.file===prima.x.rel && k.posizione===p.id)){
+        db.comunicazioni.push({id:uid(), data:prima.m.data||oggi(), tipo:'cliente', soggetto:prima.m.mittente||'Como Acqua', canale:'Email', posizione:p.id,
+          oggetto:prima.m.oggetto, nota:testoUtile(prima.m.corpo).slice(0,2500), file:prima.x.rel,
+          allegati:prima.m.allegati.map(a=>a.nome).filter(allegatoUtile)});
+        rep.fatti.push('Mail di CA registrata nelle comunicazioni ('+fmtData(prima.m.data)+')');
+      }
+      rep.ecMail=prima.m.allegati.filter(a=>/\.xlsx$/i.test(a.nome) && RE_EC_NOME.test(a.nome));
+    } else if(!prima && !p.datiCA){
+      rep.verifiche.push('Nessuna mail di CA con i dati della pratica in '+SOTTO_MAIL);
+    }
+  }
+  /* 2) estratti conto: per ogni codice cliente il più recente */
+  const ecFiles=files.filter(x=>/\.xlsx$/i.test(x.nome) && RE_EC_NOME.test(x.nome) && !/^~\$/.test(x.nome));
+  const ecSorgenti=ecFiles.length ? ecFiles.map(x=>({rel:x.rel, nome:x.nome, buf:()=>x.f.arrayBuffer()}))
+    : (rep.ecMail||[]).map(a=>({rel:SOTTO_MAIL+'/(allegato mail) '+a.nome, nome:a.nome, buf:async()=>{ const b=a.dati(); return b?b.slice().buffer:null; }}));
+  if(ecFiles.some(x=>daLeggere.has(x.rel)) || (rep.datiMail && !p.fatture.length && ecSorgenti.length)){
+    const per={};
+    for(const x of ecSorgenti){
+      try{ const b=await x.buf(); if(!b) continue; const ec=await leggiEstrattoConto(b); if(ec.errore){ rep.errori.push(x.rel+': '+ec.errore); continue; }
+        ec.file=x.rel; const k=(ec.cliente.split(/\s+-\s+/)[0]||x.nome).toUpperCase();
+        if(!per[k] || per[k].dataSit<ec.dataSit) per[k]=ec; }
+      catch(e){ rep.errori.push(x.rel+': '+e.message); }
+    }
+    const ecs=Object.values(per);
+    if(ecs.length){
+      const fatt=[].concat(...ecs.map(e=>e.fatture)), scad=Math.round(ecs.reduce((s,e)=>s+e.scaduto,0)*100)/100;
+      const aS=ecs.reduce((s,e)=>s+e.aScadere,0), nAS=ecs.reduce((s,e)=>s+e.nAScadere,0);
+      const sit=ecs.map(e=>e.dataSit).sort().pop();
+      rep.ec={file:ecs.map(e=>e.file), scaduto:scad, dataSit:sit, n:fatt.length};
+      if(nAS) rep.fatti.push('Estratto conto: '+nAS+' bollette non ancora scadute al '+fmtData(sit)+' ('+fmtEuro(aS)+') non conteggiate');
+      if(!p.fatture.length){
+        fatt.forEach(f=>p.fatture.push(Object.assign({id:uid()}, f)));
+        if(fatt.length) rep.diff=rep.diff.filter(d=>d.k!=='importo'); // con le fatture l'importo dovuto è il residuo calcolato
+        if(fatt.length) rep.fatti.push(fatt.length+' fatture scadute dall\'estratto conto al '+fmtData(sit)+': '+fmtEuro(scad));
+      } else {
+        const ora=totali(p).residuo;
+        if(Math.abs(ora-scad)>=0.005 && ecs.some(e=>daLeggere.has(e.file)))
+          rep.diff.push({k:'fatture', lab:'Fatture (estratto conto al '+fmtData(sit)+')', ora:fmtEuro(ora)+' ('+p.fatture.length+' fatture)', mail:fmtEuro(scad)+' ('+fatt.length+' fatture scadute)', valore:fatt});
+      }
+      const tot=p.datiCA&&p.datiCA.importo;
+      if(tot!=null && Math.abs(tot-scad)>=0.005)
+        rep.verifiche.push('IMPORTO TOTALE SCADUTO DA VERIFICARE: la mail di CA indica '+fmtEuro(tot)+', l\'estratto conto al '+fmtData(sit)+' '+fmtEuro(scad));
+    }
+  }
+  /* 3) ricevute di consegna PEC nuove: possibile data di invio della messa in mora (la più recente) */
+  if(p.fase===1 && !p.fasi.mora.data){
+    let ult=null;
+    for(const x of files.filter(x=>inMail(x) && /\.eml$/i.test(x.nome) && /^(?:AVVENUTA\s+)?CONSEGNA\b/i.test(x.nome) && daLeggere.has(x.rel))){
+      try{ const m=emlLeggi(await x.f.arrayBuffer()); const dt=m.data||iso(new Date(x.mod)); if(!ult || dt>ult.dt) ult={dt, ogg:m.oggetto||x.nome}; }catch(e){}
+    }
+    if(ult) rep.diff.push({k:'moraData', lab:'Data invio messa in mora (ricevuta di consegna PEC «'+ult.ogg.slice(0,90)+'»)', ora:'—', mail:fmtData(ult.dt), valore:ult.dt});
+  }
+  /* 4) indice dei file e documenti nuovi */
+  const nuovo={}; files.forEach(x=>nuovo[x.rel]=x.mod); p.cartellaIndice=nuovo; p.cartellaLetta=new Date().toISOString();
+  if(rep.primaVolta){ p.eventi.push({data:oggi(), testo:'Cartella collegata al gestionale: '+c.rel+' ('+files.length+(files.length===1?' documento)':' documenti)')}); }
+  else if(rep.nuovi.length){
+    const nomi=rep.nuovi.map(x=>x.rel.replace(/\//g,' › '));
+    p.eventi.push({data:oggi(), testo:'Nuovi documenti nella cartella: '+nomi.slice(0,8).join('; ')+(nomi.length>8?' e altri '+(nomi.length-8):'')});
+  }
+  rep.totFile=files.length;
+  return rep;
+}
+function applicaDatiMail(p, d, rep){
+  const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec};
+  CAMPI_ANAG.forEach(([k,lab])=>{ const v=String(val[k]||'').trim(); if(!v) return; const cur=String(p.debitore[k]||'').trim();
+    if(!cur){ p.debitore[k]=v; rep.fatti.push(lab+': '+v); }
+    else if(norm(cur)!==norm(v)) rep.diff.push({k, lab, ora:cur, mail:v, valore:v}); });
+  p.debitore.sedeDivisa=true;
+  const nuovi=d.codici.filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  if(nuovi.length){ p.debitore.codici=[p.debitore.codici].concat(nuovi).filter(Boolean).join(' / '); rep.fatti.push('Codici cliente: '+nuovi.join(' / ')); }
+  if(d.importo!=null && !p.fatture.length){
+    if(p.importo===''||p.importo==null){ p.importo=d.importo; rep.fatti.push('Importo totale scaduto: '+fmtEuro(d.importo)); }
+    else if(Math.abs(num(p.importo)-d.importo)>=0.005) rep.diff.push({k:'importo', lab:'Importo dovuto (Importo Totale Scaduto)', ora:fmtEuro(p.importo), mail:fmtEuro(d.importo), valore:d.importo});
+  }
+  if(d.statoPiva==='CESSATA' || /liquidazion/i.test(d.nome)) {}
+}
+
+/* ---------- «Aggiorna»: tutte le posizioni o una sola ---------- */
+async function aggiornaCartelle(soloId){
+  if(!(await prontaPosizioni())) return;
+  toast('Lettura delle cartelle…');
+  let cartelle;
+  try{ cartelle=await elencoCartelle(); }
+  catch(e){ avviso('Lettura della cartella '+(posHandle&&posHandle.name)+' non riuscita:\n'+e.message); return; }
+  const usate=new Map(); // rel -> id posizione
+  db.posizioni.forEach(p=>{ const r=relDaPercorso(p.cartella); if(r) usate.set(r, p.id); });
+  const lista=soloId ? db.posizioni.filter(p=>p.id===soloId) : db.posizioni.filter(p=>p.codice!=='CA-ES000');
+  const esito={risultati:[], senza:[], nuove:[], cartelle, solo:soloId||null};
+  for(const p of lista){
+    const ab=cartellaDi(p, cartelle, usate);
+    if(!ab){ esito.senza.push(p); continue; }
+    usate.set(ab.c.rel, p.id);
+    try{ const r=await aggiornaPratica(p, ab.c); r.come=ab.come; esito.risultati.push(r); }
+    catch(e){ esito.risultati.push({p, c:ab.c, fatti:[], nuovi:[], modificati:[], verifiche:[], diff:[], errori:['Lettura non riuscita: '+e.message]}); }
+  }
+  if(!soloId) esito.nuove=cartelle.filter(c=>!usate.has(c.rel));
+  save(); renderAll();
+  esitoCartelle=esito; renderEsitoCartelle();
+}
+function renderEsitoCartelle(){
+  const e=esitoCartelle; if(!e) return;
+  const li=a=>a.length?'<ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'';
+  let h='';
+  const conNovita=e.risultati.filter(r=>r.fatti.length||r.nuovi.length||r.verifiche.length||r.diff.length||r.errori.length);
+  const senzaNovita=e.risultati.length-conNovita.length;
+  conNovita.forEach((r,ri)=>{
+    const i=e.risultati.indexOf(r);
+    h+='<div class="card ag-card"><h3>'+esc(r.p.codice)+' · '+esc(r.p.debitore.nome||r.c.nome)+
+      '<span class="st done" title="'+esc(percorsoCartella(r.c))+'">📁 '+esc(r.c.rel)+'</span></h3>'+
+      (r.come && r.come!=='percorso' ? '<div class="desc">Cartella abbinata per '+esc(r.come)+'.</div>' : '')+
+      (r.fatti.length?'<div class="okbox"><b>Aggiornato</b>'+li(r.fatti)+'</div>':'')+
+      (r.verifiche.length?'<div class="verif"><b>Da verificare</b>'+li(r.verifiche)+'</div>':'')+
+      (r.diff.length?'<div class="ag-diff"><b>Dati diversi da quelli del gestionale</b> — spunta quelli da sostituire:'+
+        r.diff.map((d,j)=>'<label class="ag-row"><input type="checkbox" data-diff="'+i+'|'+j+'"> <span><b>'+esc(d.lab)+'</b><br>'+
+          '<span class="ag-ora">gestionale: '+esc(d.ora)+'</span> → <span class="ag-new">cartella: '+esc(d.mail)+'</span></span></label>').join('')+'</div>':'')+
+      (!r.primaVolta && r.nuovi.length?'<div class="ag-file"><b>📄 Nuovi documenti ('+r.nuovi.length+')</b>'+li(r.nuovi.map(x=>x.rel.replace(/\//g,' › ')))+'</div>':'')+
+      (r.primaVolta?'<div class="desc">Prima lettura della cartella: '+r.totFile+(r.totFile===1?' documento registrato':' documenti registrati')+'. Dal prossimo «Aggiorna» verranno segnalati solo quelli nuovi.</div>':'')+
+      (r.errori.length?'<div class="verif"><b>File non letti</b>'+li(r.errori)+'</div>':'')+
+    '</div>';
+  });
+  if(e.senza.length){
+    const opz='<option value="">— nessuna —</option>'+e.cartelle.map(c=>'<option value="'+esc(c.rel)+'">'+esc(c.rel)+'</option>').join('');
+    h+='<div class="card ag-card"><h3>Posizioni senza cartella <span class="st current">'+e.senza.length+'</span></h3>'+
+      '<div class="desc">Non ho trovato con certezza la cartella: sceglila dall\'elenco.</div>'+
+      e.senza.map(p=>'<label class="ag-row ag-sel"><span><b>'+esc(p.codice)+'</b> · '+esc(p.debitore.nome||'—')+'</span><select data-lega="'+p.id+'">'+opz+'</select></label>').join('')+'</div>';
+  }
+  if(e.nuove.length){
+    h+='<div class="card ag-card"><h3>Cartelle senza posizione nel gestionale <span class="st current">'+e.nuove.length+'</span></h3>'+
+      '<div class="desc">Spunta quelle da aprire come nuove posizioni: i dati vengono presi dalla mail di CA in '+SOTTO_MAIL+' e dall\'estratto conto.</div>'+
+      e.nuove.map((c,j)=>'<label class="ag-row"><input type="checkbox" data-crea="'+j+'"'+(c.categoria?'':' checked')+'> <span>'+esc(c.nome)+
+        (c.categoria?' <span class="ag-ora">('+esc(c.categoria)+')</span>':'')+'</span></label>').join('')+'</div>';
+  }
+  if(!h) h='<div class="okbox">✓ Nessuna novità nelle cartelle'+(e.risultati.length?' ('+e.risultati.length+(e.risultati.length===1?' posizione controllata)':' posizioni controllate)'):'')+'.</div>';
+  else if(senzaNovita) h+='<div class="desc">Altre '+senzaNovita+' posizioni controllate: nessuna novità.</div>';
+  const azioni=e.risultati.some(r=>r.diff.length) || e.senza.length || e.nuove.length;
+  $('#modal').innerHTML='<div class="box ag-box"><div class="mh"><h2>🔄 Aggiorna dalle cartelle</h2><button class="p-close" data-act="chiudiModal">✕</button></div>'+
+    '<div class="mb">'+h+'</div><div class="mf"><button class="btn-out" data-act="chiudiModal">Chiudi</button>'+
+    (azioni?'<button class="btn-ind" data-act="applicaCartelle">Applica le scelte</button>':'')+'</div></div>';
+  $('#modal').classList.remove('hidden');
+}
+async function applicaCartelle(btn){
+  const e=esitoCartelle; if(!e) return;
+  btn.disabled=true; btn.textContent='Applicazione…';
+  let n=0; const daAggiornare=[];
+  document.querySelectorAll('#modal [data-diff]').forEach(ch=>{ if(!ch.checked) return;
+    const [i,j]=ch.dataset.diff.split('|').map(Number), r=e.risultati[i], d=r&&r.diff[j]; if(!d) return; const p=r.p;
+    if(d.k==='importo') p.importo=d.valore;
+    else if(d.k==='fatture'){ p.fatture=d.valore.map(f=>Object.assign({id:uid()}, f)); }
+    else if(d.k==='moraData'){ p.fasi.mora.data=d.valore; if(!p.fasi.mora.termine_manuale) p.fasi.mora.termine_data=termineMoraCalcolato(p); }
+    else p.debitore[d.k]=d.valore;
+    n++; });
+  document.querySelectorAll('#modal [data-lega]').forEach(s=>{ if(!s.value) return; const p=getPos(s.dataset.lega), c=e.cartelle.find(x=>x.rel===s.value);
+    if(p && c){ p.cartella=percorsoCartella(c); daAggiornare.push(p); } });
+  const crea=[];
+  document.querySelectorAll('#modal [data-crea]').forEach(ch=>{ if(ch.checked) crea.push(e.nuove[+ch.dataset.crea]); });
+  if(!(await permessoPos(false)) && (daAggiornare.length || crea.length)){ if(!(await permessoPos(true))){ avviso('Permesso sulla cartella non concesso.'); btn.disabled=false; return; } }
+  const risultati=[];
+  for(const p of daAggiornare){ try{ risultati.push(await aggiornaPratica(p, e.cartelle.find(c=>c.rel===relDaPercorso(p.cartella)))); }catch(err){} }
+  for(const c of crea){
+    const p=nuovaPosizione(); p.apertura=oggi();
+    db.posizioni.unshift(p);
+    try{ const r=await aggiornaPratica(p, c);
+      if(!p.debitore.nome){ p.debitore.nome=c.nome; if(!p.debitore.forma) p.debitore.forma=formaDaNome(c.nome); }
+      if(p.datiCA){ p.note='Pratica aperta dalla cartella '+c.rel+' — mail di CA del '+fmtData(p.datiCA.data)+': '+p.datiCA.oggetto;
+        p.eventi.push({data:p.datiCA.data||oggi(), testo:'Pratica ricevuta da CA via email: '+p.datiCA.oggetto}); }
+      r.fatti.unshift('Nuova posizione creata'); risultati.push(r); }
+    catch(err){ if(!p.debitore.nome) p.debitore.nome=c.nome; risultati.push({p, c, fatti:['Nuova posizione creata'], nuovi:[], modificati:[], verifiche:[], diff:[], errori:['Lettura non riuscita: '+err.message]}); }
+  }
+  save(); renderAll();
+  if(risultati.length){ esitoCartelle={risultati, senza:[], nuove:[], cartelle:e.cartelle}; renderEsitoCartelle(); }
+  else chiudiModal();
+  toast((n?n+' dati sostituiti':'Scelte applicate')+(crea.length?' · '+crea.length+' nuove posizioni':'')+(daAggiornare.length?' · '+daAggiornare.length+' cartelle collegate':''));
+}
+
+/* ---------- salvataggio di un file nella cartella della posizione ---------- */
+async function cartellaPratica(p, sotto, chiedi){
+  if(IN_ARTEFATTO || !posHandle) return null;
+  if(!(await permessoPos(!!chiedi))) return null;
+  let rel=relDaPercorso(p.cartella), h=null;
+  if(rel){ try{ h=await handleDaRel(rel); }catch(e){ h=null; } }
+  if(!h){ try{ const ab=cartellaDi(p, await elencoCartelle()); if(ab){ h=ab.c.h; rel=ab.c.rel; p.cartella=percorsoCartella(ab.c); } }catch(e){} }
+  if(!h) return null;
+  if(sotto){ h=await h.getDirectoryHandle(sotto,{create:true}); }
+  return {h, rel};
+}
+async function scriviInCartella(dir, nome, blob){
+  const base=nome.replace(/\.[^.]+$/,''), ext=(nome.match(/\.[^.]+$/)||[''])[0];
+  let finale=nome;
+  for(let i=2;i<100;i++){ try{ await dir.getFileHandle(finale); finale=base+' ('+i+')'+ext; }catch(e){ break; } }
+  const fh=await dir.getFileHandle(finale,{create:true}), w=await fh.createWritable(); await w.write(blob); await w.close();
+  const f=await fh.getFile();
+  return {nome:finale, mod:f.lastModified};
+}
 
 /* ---------------- eventi ---------------- */
 document.addEventListener('click', e=>{
@@ -2625,6 +3243,15 @@ document.addEventListener('click', e=>{
   if(act==='generaMora'){ apriGeneraMora(); return; }
   if(act==='eseguiGeneraMora'){ eseguiGeneraMora(t); return; }
   if(act==='chiudiModal'){ chiudiModal(); return; }
+  /* v1.5: cartelle delle posizioni e stato */
+  if(act==='attesa') return; // menu a tendina nella riga: non apre la scheda
+  if(act==='aggiornaCartelle'){ aggiornaCartelle(); return; }
+  if(act==='aggiornaPratica'){ if(openId) aggiornaCartelle(openId); return; }
+  if(act==='applicaCartelle'){ applicaCartelle(t); return; }
+  if(act==='collegaPosizioni'){ $('#menu').classList.add('hidden'); collegaPosizioni(); return; }
+  if(act==='percorsoPosizioni'){ $('#menu').classList.add('hidden');
+    const v=window.prompt ? window.prompt('Percorso della cartella POSIZIONI sul computer (serve per «Apri cartella» e per riconoscere le cartelle già indicate nelle posizioni):', basePosizioni()) : null;
+    if(v!=null){ impostaBasePosizioni(v); aggiornaInfoCartelle(); toast('Percorso: '+basePosizioni()); } return; }
   if(act==='vaiModelli'){ chiudiModal(); closePanel(); setView('modelli'); return; }
   if(act==='caricaModello'){ $('#modFile').click(); return; }
   if(act==='scaricaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(m) salvaFile(m.fileName, new Blob([m.buf])); return; }
@@ -2727,6 +3354,9 @@ document.addEventListener('input', e=>{
   if(el.id==='search'){ filtri.q=el.value; renderTable(); return; }
   if(el.id==='searchCom'){ filtriCom.q=el.value; renderCom(); return; }
   if(el.id==='statoFilter'){ filtri.stato=el.value; renderChips(); renderTable(); return; }
+  if(el.id==='attesaFilter'){ filtri.attesa=el.value; renderTable(); return; }
+  if(el.dataset && el.dataset.act==='attesa'){ const p=getPos(el.dataset.id); if(!p) return; p.attesa=el.value;
+    el.className='attesa-sel att-'+(p.attesa||'no'); save(); if(filtri.attesa!=='tutte') renderTable(); return; }
   if(el.dataset && el.dataset.act==='tipoModello'){ const m=(modelli||[]).find(x=>x.id===el.dataset.id); if(m){ m.tipo=el.value; idbModello('put',m).then(renderModelli); } return; }
   if(el.id==='postaMostraSmistate'){ renderPosta(); return; }
   if(el.dataset && el.dataset.pf){
