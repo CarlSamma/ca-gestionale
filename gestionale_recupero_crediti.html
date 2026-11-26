@@ -240,6 +240,14 @@ td .sub{font-size:12px;color:var(--mut);margin-top:2px}
 .com-nota{color:#3c465a;margin-top:3px;white-space:pre-wrap;font-size:13.3px}
 .com-empty{padding:26px;text-align:center;color:var(--mut);font-style:italic}
 @media (max-width:720px){.comwrap{padding:6px 10px 22px}.tabs{padding:10px 10px 0}}
+.dlg-bg{position:fixed;inset:0;background:rgba(12,20,38,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);max-width:520px;width:100%;padding:18px 20px}
+.dlg-msg{white-space:pre-wrap;font-size:14px;line-height:1.5;color:var(--txt)}
+.dlg-bt{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.dlg-bt button{border-radius:8px;padding:8px 16px;font-weight:650;font-size:13.5px;cursor:pointer}
+.dlg-no{background:#fff;border:1px solid #c3cad6;color:var(--txt)}
+.dlg-ok{background:var(--indigo);border:1px solid var(--indigo);color:#fff}
+.dlg-ok.danger{background:var(--red);border-color:var(--red)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);
   color:#fff;border-radius:8px;padding:10px 16px;font-size:13.5px;z-index:99;box-shadow:var(--shadow)}
 
@@ -312,6 +320,36 @@ tbody td:first-child .bold{white-space:nowrap}
   body{background:#fff}.kpis{padding:0}
   .tblwrap{box-shadow:none;margin:12px 0}thead th{position:static}
 }
+/* posta */
+.grow{flex:1}
+.postawrap{max-width:1100px;margin:0 auto;padding:0 18px 40px}
+.posta-desc{margin:4px 0 12px}
+.post-stato{font-size:12.5px;color:var(--mut)}.post-stato.err{color:var(--red);font-weight:600}
+.chk{display:flex;gap:7px;align-items:center;font-size:13px;color:var(--mut);margin:6px 0}
+.mail{background:var(--card);border:1px solid var(--line);border-radius:11px;margin-bottom:8px;overflow:hidden}
+.mail.sm{opacity:.75}.mail.open{box-shadow:0 2px 10px rgba(20,30,60,.08);opacity:1}
+.mail-head{display:flex;gap:9px;align-items:center;padding:10px 14px;cursor:pointer;flex-wrap:wrap}
+.mail-head:hover{background:var(--grey-l)}
+.mail-ogg{font-weight:650;font-size:13.5px;flex:1;min-width:240px}
+.b-mail{font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.b-mail.nuova{background:#e5f4ea;color:#16794a}.b-mail.agg{background:var(--amber-l);color:#8a5a00}
+.b-mail.com{background:var(--indigo-l);color:var(--indigo)}.b-mail.altro{background:var(--grey-l);color:var(--mut)}
+.b-sm,.b-pos2,.b-new,.b-all{font-size:11.5px;border-radius:20px;padding:2px 9px;white-space:nowrap}
+.b-sm{background:#e5f4ea;color:#16794a}.b-pos2{background:var(--indigo-l);color:var(--indigo);font-weight:650}
+.b-new{background:#fff3d6;color:#8a5a00}.b-all{color:var(--mut)}
+.mail-body{border-top:1px solid var(--line);padding:12px 14px}
+.mail-meta{font-size:12.5px;color:var(--mut);margin-bottom:8px}.mail-meta a{color:var(--indigo)}
+.mail-all{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip-all{font-size:12px;background:var(--grey-l);border-radius:6px;padding:3px 8px}
+.mail-ai{background:var(--indigo-l);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:10px;display:grid;gap:4px}
+.mail-ai .dv{color:#8a5a00}
+.mail-form{margin-bottom:6px}.mail-form i{font-weight:400;color:var(--indigo)}
+.mini.grey{border-color:#c3cad6;color:var(--mut)}
+.mini[disabled]{opacity:.6;cursor:wait}
+.link{background:none;border:0;color:var(--indigo);font-size:12.5px;padding:6px 0;cursor:pointer}
+.mail-txt{white-space:pre-wrap;font:12.5px/1.45 inherit;background:var(--grey-l);border-radius:8px;padding:10px 12px;max-height:360px;overflow:auto;margin:4px 0 0}
+.com-gmail{font-size:12px;color:var(--indigo)}
+.com-all{font-size:12px;color:var(--mut);margin-top:5px}
 </style>
 </head>
 <body>
@@ -348,6 +386,7 @@ tbody td:first-child .bold{white-space:nowrap}
   <button class="tab active" data-act="tab" data-tab="registro">📋 Registro posizioni</button>
   <button class="tab" data-act="tab" data-tab="comunicazioni">💬 Comunicazioni <span class="cnt" id="cntCom">0</span></button>
   <button class="tab" data-act="tab" data-tab="modelli">📄 Modelli <span class="cnt" id="cntMod">0</span></button>
+  <button class="tab" data-act="tab" data-tab="posta">📥 Posta CA <span class="cnt" id="cntPosta">–</span></button>
 </nav>
 
 <div id="viewRegistro">
@@ -425,6 +464,17 @@ tbody td:first-child .bold{white-space:nowrap}
     </div>
   </div>
 </div><!-- /viewModelli -->
+<div id="viewPosta" class="hidden">
+  <section class="toolbar">
+    <button class="btn-add" data-act="postaAggiorna">⟳ Aggiorna da Gmail</button>
+    <label class="chk"><input type="checkbox" id="postaMostraSmistate"> mostra anche le mail già smistate</label>
+    <span class="grow"></span><span id="postaStato" class="post-stato"></span>
+  </section>
+  <div class="postawrap">
+    <div class="desc posta-desc">Mail inoltrate a <b>cagestionale@gmail.com</b>. Per ogni mail di CA scegli se <b>creare una nuova posizione</b> o <b>registrarla su una posizione esistente</b>: nulla viene scritto senza la tua conferma. Le mail smistate ricevono in Gmail l'etichetta <b>Gestionale/Smistata</b>.</div>
+    <div id="postaBox"></div>
+  </div>
+</div><!-- /viewPosta -->
 
 <div class="overlay hidden" id="overlay"></div>
 <aside class="panel hidden" id="panel"></aside>
@@ -571,7 +621,7 @@ function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', impo
 function nuovaPosizione(){
   return {
     id: uid(), codice: codiceProssimo(), cliente:'CA',
-    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:''},
+    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:'', codici:''},
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
     fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
@@ -601,6 +651,7 @@ function migraPosizione(p){
   p.fatture.forEach(f=>{ if(!f.id) f.id=uid(); });
   if(!Array.isArray(p.eventi)) p.eventi=[];
   if(!Array.isArray(p.storico)) p.storico=[];
+  p.debitore=Object.assign({}, base.debitore, p.debitore);
   p.debitore.forma=normalizzaForma(p.debitore.forma);
   p.debitore=Object.assign({indirizzo:'', cap:''}, p.debitore);
   // v1.4: «sede» scritta come indirizzo completo («Via X 1, 22100 Como (CO)») -> indirizzo, CAP e comune
@@ -719,6 +770,8 @@ function normalizza(d){
   if(!Array.isArray(d.comunicazioni)) d.comunicazioni=[];
   d.comunicazioni.forEach(c=>{ if(!c.id) c.id=uid(); });
   d.posizioni.forEach(migraPosizione);
+  if(!d.posta || typeof d.posta!=='object') d.posta={};
+  if(!d.posta.smistati || typeof d.posta.smistati!=='object') d.posta.smistati={};
   if(!d.aggiornato) d.aggiornato=0;
   d.versione=2;
   return d;
@@ -791,7 +844,7 @@ async function scriviFileDiretto(silent){
     fileOk=true; aggiornaStatus(); return true;
   }catch(err){
     fileOk=false; aggiornaStatus('⚠ File non scritto: '+err.message,'err');
-    if(!silent) alert('Salvataggio su file non riuscito:\n'+err.message);
+    if(!silent) avviso('Salvataggio su file non riuscito:\n'+err.message);
     return false;
   }
 }
@@ -823,16 +876,16 @@ function adottaFile(f){
 async function gestisciConflitto(f){
   if(conflittoAperto) return; conflittoAperto=true;
   try{
-    const usaFile = confirm('⚠ ATTENZIONE — il file '+FILE_NAME+' è stato modificato da un altro computer o browser, '+
+    const usaFile = await conferma('⚠ ATTENZIONE — il file '+FILE_NAME+' è stato modificato da un altro computer o browser, '+
       'e anche questo browser ha modifiche non ancora salvate nel file.\n\n'+
-      'FILE:               '+descrVersione(f)+'\nQUESTO BROWSER: '+descrVersione(db)+'\n\n'+
-      'OK = usa la versione del FILE\nAnnulla = usa la versione di QUESTO BROWSER (sovrascrive il file)\n\n'+
-      'In entrambi i casi la versione scartata viene salvata come copia nella cartella.');
+      'FILE: '+descrVersione(f)+'\nQUESTO BROWSER: '+descrVersione(db)+'\n\n'+
+      'Quale versione vuoi tenere? L\'altra viene salvata come copia nella cartella.',
+      {ok:'Usa la versione del FILE', annulla:'Usa QUESTO BROWSER'});
     const scartata = usaFile ? db : f;
     const nomeCopia = 'gestionale_ca_conflitto_'+new Date().toISOString().replace(/[-:]/g,'').replace('T','_').slice(0,15)+
       (usaFile?'_browser':'_file')+'.json';
     try{ await scriviJson(nomeCopia, scartata); }
-    catch(e){ alert('Impossibile salvare la copia della versione scartata ('+e.message+').\nOperazione annullata: esporta un backup JSON e riprova.'); return; }
+    catch(e){ avviso('Impossibile salvare la copia della versione scartata ('+e.message+').\nOperazione annullata: esporta un backup JSON e riprova.'); return; }
     if(usaFile){ adottaFile(f); toast('Caricata la versione del file · copia salvata: '+nomeCopia); }
     else { await scriviFileDiretto(false); toast('File sovrascritto · copia salvata: '+nomeCopia); }
   }finally{ conflittoAperto=false; }
@@ -861,7 +914,7 @@ async function chiediPermesso(){
 }
 async function collegaCartella(){
   if(!window.showDirectoryPicker){
-    alert('Il browser non supporta il salvataggio diretto su file.\nUsa Chrome o Edge, oppure Esporta/Importa JSON.');
+    avviso('Il browser non supporta il salvataggio diretto su file.\nUsa Chrome o Edge, oppure Esporta/Importa JSON.');
     return;
   }
   try{
@@ -871,7 +924,7 @@ async function collegaCartella(){
     await sincronizza();
     if(fileOk) aggiornaStatus('✓ Cartella collegata: '+FILE_NAME,'ok');
     toast('Cartella collegata: i dati verranno salvati anche in '+FILE_NAME);
-  }catch(err){ if(err && err.name!=='AbortError') alert('Impossibile collegare la cartella:\n'+err.message); }
+  }catch(err){ if(err && err.name!=='AbortError') avviso('Impossibile collegare la cartella:\n'+err.message); }
 }
 async function ricaricaDaFile(){
   if(!dirHandle){ await collegaCartella(); return; }
@@ -880,7 +933,7 @@ async function ricaricaDaFile(){
   if(perm!=='granted'){ pendingPerm=true; aggiornaStatus('⚠ Permesso cartella da concedere','warn'); return; }
   pendingPerm=false;
   const f=await leggiFile();
-  if(!f){ alert('Nessun file '+FILE_NAME+' nella cartella collegata.'); return; }
+  if(!f){ avviso('Nessun file '+FILE_NAME+' nella cartella collegata.'); return; }
   if(db && db.aggiornato!==fileBase && db.aggiornato!==f.aggiornato){ await gestisciConflitto(f); return; }
   adottaFile(f); fileOk=true; aggiornaStatus(); toast('Registro ricaricato dal file');
 }
@@ -891,12 +944,12 @@ async function esportaJson(){
   const nome='gestionale_ca_'+oggi()+'.json', testo=JSON.stringify(db,null,2);
   if(IN_ARTEFATTO){
     const dl=await downloadsPronto;
-    if(!dl){ alert('Esportazione non disponibile in questa vista.'); return; }
+    if(!dl){ avviso('Esportazione non disponibile in questa vista.'); return; }
     try{ await dl.save({filename:nome, data:testo}); toast('Registro esportato'); }
     catch(err){
       const c=err&&err.code;
       if(c==='declined') return;
-      alert(c==='rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
+      avviso(c==='rate_limited' ? 'C\'è già una richiesta di salvataggio aperta: riprova tra poco.'
                                : 'Esportazione non riuscita: '+((err&&err.message)||c||err));
     }
     return;
@@ -910,6 +963,451 @@ async function esportaJson(){
   toast('Registro esportato');
 }
 function importaJson(){ $('#importFile').click(); }
+
+/* =====================================================================
+   POSTA CA — casella Gmail cagestionale@gmail.com (solo nell'artefatto claude.ai)
+   Le mail di Como Acqua arrivano inoltrate dallo studio: l'intestazione originale
+   (Da / Inviato / Oggetto) è nel corpo del messaggio.
+   ===================================================================== */
+const GMAIL = 'Gmail';
+/* stato dello smistamento salvato nel registro (segue export/import e il file JSON) */
+function statoPosta(){
+  if(!db.posta || typeof db.posta!=='object') db.posta={};
+  if(!db.posta.smistati || typeof db.posta.smistati!=='object') db.posta.smistati={};
+  return db.posta;
+}
+const LABEL_SMISTATA = 'Gestionale/Smistata';
+const PIVA_CA = '03522110133';
+const mcpPronto    = IN_ARTEFATTO ? window.claude.use('mcp').catch(()=>null)    : Promise.resolve(null);
+const samplePronto = IN_ARTEFATTO ? window.claude.use('sample').catch(()=>null) : Promise.resolve(null);
+const posta = { stato:'idle', msg:'', mail:[], caricata:false, aperta:null, form:{}, analisi:{}, analisiInCorso:{}, testo:{} };
+const MESI = {gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12,
+  january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+
+/* ---------- riconoscimento del contenuto (funzioni pure, testabili) ---------- */
+function pulisciOggetto(s){
+  let t=String(s||'').trim(), prima;
+  do{ prima=t; t=t.replace(/^(?:I|R|RE|R\.|FW|FWD|TR|INOLTRA|Fwd?)\s*:\s*/i,'').trim(); }while(t!==prima);
+  return t;
+}
+function dataItaliana(s){
+  const m=String(s||'').toLowerCase().match(/(\d{1,2})\s+([a-zà]+)\s+(\d{4})/);
+  if(m && MESI[m[2]]) return m[3]+'-'+String(MESI[m[2]]).padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  const n=String(s||'').match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);
+  return n ? n[3]+'-'+n[2].padStart(2,'0')+'-'+n[1].padStart(2,'0') : '';
+}
+/* intestazione del messaggio originale dentro l'inoltro (Outlook/Gmail, italiano o inglese) */
+function estraiOriginale(corpo){
+  const t=String(corpo||'').replace(/\r/g,'');
+  const riga=(nomi)=>{ const r=new RegExp('^\\s*\\**\\s*(?:'+nomi+')\\s*:?\\s*\\**\\s*:?\\s*(.+)$','im'); const m=t.match(r); return m?m[1].replace(/\*+/g,'').trim():''; };
+  const da=riga('Da|From'), inviato=riga('Inviato|Sent|Data|Date'), oggetto=riga('Oggetto|Subject');
+  const em=da.match(/<?([\w.+-]+@[\w-]+(?:\.[\w-]+)+)>?/);
+  return { da: da.replace(/<[^>]*>/,'').replace(/["']/g,'').trim(), email: em?em[1]:'', data: dataItaliana(inviato), oggetto };
+}
+/* testo utile: dal messaggio originale in poi, senza disclaimer e righe di immagini */
+function testoUtile(corpo){
+  let t=String(corpo||'').replace(/\r/g,'');
+  const i=t.search(/^\s*\**\s*(?:Da|From)\s*:?\s*\**\s*:?/im); if(i>0) t=t.slice(i);
+  const j=t.search(/Le informazioni, i dati e le notizie contenute/i); if(j>0) t=t.slice(0,j);
+  return t.replace(/\[image:[^\]]*\]\s*(<[^>]*>)?/g,'').replace(/\n{3,}/g,'\n\n').trim();
+}
+function estraiDebitoreDaOggetto(ogg){
+  const s=String(ogg||'').replace(/\s+/g,' ').trim();
+  const taglia=n=>n.split(/\s+[–—]\s+/)[0].replace(/\s+-\s*$/,'').trim();
+  let m=s.match(/Codic[ei]\s+Client[ei]\s*:?\s*(.+?)\s+-\s+(.+)$/i);
+  if(m) return {codici:m[1].split(/\s*\/\s*/).map(x=>x.trim()).filter(Boolean), nome:taglia(m[2])};
+  m=s.match(/DEBITOR[EI]\s*[-:]?\s*([A-Z]*\d[A-Z0-9]*)\s*-\s*(.+)$/i);
+  if(m) return {codici:[m[1]], nome:taglia(m[2])};
+  m=s.match(/DEBIT(?:ORE|RICE)\s*[-:]?\s*(.+)$/i);
+  if(m) return {codici:[], nome:taglia(m[1])};
+  return {codici:[], nome:''};
+}
+/* conferme di lettura («Letto: …») e ricevute PEC (accettazione/consegna): non sono pratiche e non si mostrano.
+   «POSTA CERTIFICATA: …» è invece il messaggio PEC vero e va letto. Stesse regole di skills/…/mail_ca.py */
+const RE_PREFISSI='(?:(?:I|R|RE|RIF|FW|FWD|TR|INOLTRO|AW|WG|SV|VS)\\s*:\\s*)*';
+const RE_LETTURA='(?:Letto|Non letto|Read|Not read|Notifica di lettura|Conferma di lettura|Ricevuta di (?:avvenuta )?lettura|Read receipt|Return receipt)\\b\\s*:';
+const RE_RICEVUTA_PEC='(?:ACCETTAZIONE|AVVENUTA\\s+CONSEGNA|CONSEGNA|PRESA\\s+IN\\s+CARICO|(?:PRE)?AVVISO\\s+DI\\s+(?:NON\\s+ACCETTAZIONE|MANCATA\\s+CONSEGNA|RILEVAZIONE\\s+VIRUS)|'+
+  'ERRORE\\s+DI\\s+CONSEGNA|MANCATA\\s+CONSEGNA|NON\\s+ACCETTAZIONE|RICEVUTA\\s+DI\\s+(?:ACCETTAZIONE|(?:AVVENUTA\\s+)?CONSEGNA))\\s*:';
+const reLetturaOgg=new RegExp('^\\s*'+RE_PREFISSI+RE_LETTURA,'i'), rePecOgg=new RegExp('^\\s*'+RE_PREFISSI+RE_RICEVUTA_PEC,'i');
+const reLetturaCorpo=new RegExp('(?:Oggetto|Subject)\\s*:\\s*\\**\\s*'+RE_PREFISSI+'(?:Letto|Read)\\s*:|(?:il|your) messag(?:gio|e)\\b[\\s\\S]{0,120}\\b(?:è stato letto|was read)|\\bè stato letto (?:il|in data)\\b','i');
+const rePecCorpo=new RegExp('(?:Oggetto|Subject)\\s*:\\s*\\**\\s*'+RE_PREFISSI+RE_RICEVUTA_PEC+
+  '|\\bRicevuta di (?:accettazione|avvenuta consegna|presa in carico|mancata consegna)\\b|\\bil messaggio\\b[\\s\\S]{0,200}\\b(?:è stato accettato dal sistema|è stato consegnato nella casella)','i');
+function motivoScarto(oggetto, corpo){
+  const o=String(oggetto||''), c=String(corpo||'');
+  const corto = c.length<3000 && !/Ragione Sociale|Importo (?:Totale )?Scaduto/i.test(c);
+  if(reLetturaOgg.test(o) || (corto && reLetturaCorpo.test(c))) return 'conferma di lettura';
+  if(rePecOgg.test(o) || (corto && rePecCorpo.test(c))) return 'ricevuta PEC';
+  return '';
+}
+/* legge TUTTE le posizioni della mail e controlla l'IMPORTO TOTALE SCADUTO con la somma delle posizioni */
+function verificaImporti(corpo){
+  const t=String(corpo||'').replace(/\*/g,'').replace(/€\s+/g,'€ ');
+  const tm=t.match(/Importo\s+Totale\s+Scaduto[^€]{0,90}€\s*\.?\s*(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})/i);
+  const posizioni=[]; const re=/Importo\s+Scaduto\s+Posizione\s*(\d+)[^€]{0,40}€\s*\.?\s*(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})/gi; let m;
+  while((m=re.exec(t))) posizioni.push({n:+m[1], importo:importoIt(m[2])});
+  const totale=tm?importoIt(tm[1]):null;
+  const somma=posizioni.length?Math.round(posizioni.reduce((s,x)=>s+x.importo,0)*100)/100:null;
+  const verifiche=[];
+  if(totale!=null && somma!=null && Math.abs(totale-somma)>=0.005)
+    verifiche.push('IMPORTO TOTALE DA VERIFICARE: la mail indica '+fmtEuro(totale)+' ma la somma delle '+posizioni.length+' posizioni è '+fmtEuro(somma));
+  if(totale==null && somma!=null) verifiche.push('Importo totale scaduto non indicato: usata la somma delle posizioni ('+fmtEuro(somma)+')');
+  if(/liquidazione/i.test(t)) verifiche.push('Società in liquidazione: valutare «alla c.a. del liquidatore»');
+  if(/\bS\.?\s?N\.?\s?C\b/i.test(t.slice(0,4000))) verifiche.push('S.n.c.: soci illimitatamente responsabili');
+  if(/\bS\.?\s?A\.?\s?S\b/i.test(t.slice(0,4000))) verifiche.push('S.a.s.: soci accomandatari illimitatamente responsabili');
+  return {totale, somma, posizioni, verifiche};
+}
+function importoIt(s){ return Math.round(parseFloat(String(s).replace(/\./g,'').replace(',','.'))*100)/100; }
+function estraiImporto(testo){
+  const m=String(testo||'').match(/(?:importo|totale|scadut|dovut|insolut|esposizion)[^\n€]{0,80}€\s*\.?\s*(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})/i);
+  return m ? importoIt(m[1]) : null;
+}
+function estraiPiva(testo){
+  const visti=(String(testo||'').match(/\b\d{11}\b/g)||[]).filter(x=>x!==PIVA_CA);
+  const m=String(testo||'').match(/(?:P\.?\s*IVA|partita iva|C\.?F\.?)\s*[:n.°]*\s*(?:IT)?\s*(\d{11})/i);
+  if(m && m[1]!==PIVA_CA) return m[1];
+  return visti.length===1 ? visti[0] : '';
+}
+function analizzaMail(m){
+  const orig=estraiOriginale(m.plaintextBody);
+  const oggetto=pulisciOggetto(orig.oggetto || m.subject);
+  const deb=estraiDebitoreDaOggetto(oggetto);
+  const corpo=testoUtile(m.plaintextBody);
+  let tipo='comunicazione';
+  if(/nuova\s+pratica/i.test(oggetto)) tipo='nuova';
+  else if(/aggiornament|saldo|pagament|acconto|incass|bonifico/i.test(oggetto)) tipo='aggiornamento';
+  const daCA=/@comoacqua\.it$/i.test(orig.email) || /@comoacqua\.it/i.test(m.sender||'') || /como\s*acqua/i.test(corpo.slice(0,400));
+  const imp=verificaImporti(corpo);
+  const pag=oggetto.match(/(?:saldo|pagamento|acconto)[^€]{0,40}€\s*\.?\s*(\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2})/i);
+  return { oggetto, tipo, daCA, codici:deb.codici, nome:deb.nome,
+           importo: imp.totale!=null ? imp.totale : (imp.somma!=null ? imp.somma : estraiImporto(corpo)),
+           posizioni: imp.posizioni, verifiche: imp.verifiche,
+           pagamento: pag?importoIt(pag[1]):null, piva:estraiPiva(corpo), orig, corpo };
+}
+const PAROLE_FORMA = new Set(['s','r','l','a','p','n','c','e','d','srl','srls','sas','spa','snc','ss','ssd','soc','societa','coop','cooperativa',
+  'ditta','individuale','di','in','liquidazione','unipersonale','arl']);
+function chiaveNome(v){
+  return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ')
+    .split(' ').filter(w=>w && !PAROLE_FORMA.has(w)).join(' ');
+}
+function codiciPosizione(p){
+  const s=(p.debitore.codici||'')+' '+(p.note||'');
+  return s;
+}
+function abbinaPosizione(a){
+  const ca=(a.oggetto||'').match(/CA-\d{4}-\d{3,}/i);
+  if(ca){ const p=db.posizioni.find(x=>(x.codice||'').toUpperCase()===ca[0].toUpperCase()); if(p) return {pos:p, come:'codice posizione nell\'oggetto'}; }
+  if(a.piva){ const p=db.posizioni.find(x=>String(x.debitore.piva||'').replace(/\D/g,'').indexOf(a.piva)>=0); if(p) return {pos:p, come:'P.IVA'}; }
+  for(const c of (a.codici||[])){
+    if(String(c).length<3) continue;
+    const r=new RegExp('(^|[^A-Z0-9])'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^A-Z0-9]|$)','i');
+    const p=db.posizioni.find(x=>r.test(codiciPosizione(x)));
+    if(p) return {pos:p, come:'codice cliente '+c};
+  }
+  const k=chiaveNome(a.nome);
+  if(k.length>=4){
+    let p=db.posizioni.find(x=>chiaveNome(x.debitore.nome)===k);
+    if(p) return {pos:p, come:'denominazione'};
+    p=db.posizioni.find(x=>{ const kx=chiaveNome(x.debitore.nome); return kx.length>=6 && (kx.indexOf(k)===0 || k.indexOf(kx)===0); });
+    if(p) return {pos:p, come:'denominazione simile'};
+  }
+  return {pos:null, come:''};
+}
+function allegatiVeri(m){
+  return (m.attachments||[]).filter(x=>!(String(x.partId||'').indexOf('.')>=0 && /^image\//.test(x.mimeType||'')));
+}
+
+/* ---------- chiamate a Gmail ---------- */
+function testoErrore(e){
+  const c=e&&e.code;
+  if(c==='needs_reauth') return 'Il collegamento a Gmail è scaduto: ricollegalo in claude.ai → Impostazioni → Connettori.';
+  if(c==='server_not_connected') return 'Il connettore Gmail non è collegato: aggiungilo in claude.ai → Impostazioni → Connettori (account cagestionale@gmail.com).';
+  if(c==='selection_required') return 'Ci sono più connettori Gmail: scegli quello di cagestionale@gmail.com nel messaggio di claude.ai.';
+  if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required') return 'Serve il tuo consenso per leggere Gmail: premi «Aggiorna da Gmail» e consenti l\'accesso.';
+  if(c==='blocked_by_policy') return 'L\'organizzazione non consente questo strumento Gmail.';
+  if(c==='server_unavailable'||c==='rate_limited') return 'Gmail non risponde in questo momento: riprova tra poco.';
+  if(c==='not_granted'||c==='capability_disabled'||c==='capability_removed') return 'La posta Gmail non è disponibile in questa vista.';
+  if(c==='tool_error') return 'Gmail ha restituito un errore: '+(e.message||'');
+  return 'Errore Gmail: '+((e&&e.message)||c||e);
+}
+async function leggiGmail(tool, input){
+  const mcp=await mcpPronto; if(!mcp) throw {code:'not_granted'};
+  try{ return (await mcp.callTool(GMAIL, tool, input, {cache:false})).payload || {}; }
+  catch(e){
+    if(e && e.retryable){ // una sola ripetizione, solo per le letture
+      await new Promise(r=>setTimeout(r, Math.min(e.retryAfterMs||1500, 8000)+Math.random()*500));
+      return (await mcp.callTool(GMAIL, tool, input, {cache:false})).payload || {};
+    }
+    throw e;
+  }
+}
+async function postaAggiorna(){
+  if(posta.stato==='caricamento') return;
+  if(!(await mcpPronto)){ posta.stato='errore'; posta.msg=IN_ARTEFATTO?testoErrore({code:'not_granted'}):''; renderPosta(); return; }
+  posta.stato='caricamento'; posta.msg='Lettura delle conversazioni…'; renderPosta();
+  try{
+    const thread=[]; let token='', pagine=0;
+    do{
+      const inp={query:'in:inbox -in:sent', pageSize:50, view:'THREAD_VIEW_IDS_ONLY'}; if(token) inp.pageToken=token;
+      const pl=await leggiGmail('search_threads', inp);
+      (pl.threads||[]).forEach(t=>thread.push(t.id)); token=pl.nextPageToken||''; pagine++;
+    }while(token && pagine<4);
+    const mail=[]; let fatti=0;
+    const coda=thread.slice();
+    const lavora=async()=>{ while(coda.length){ const id=coda.shift();
+      const th=await leggiGmail('get_thread',{threadId:id, messageFormat:'PLAIN_TEXT'});
+      (th.messages||[]).forEach(m=>{ if((m.labelIds||[]).indexOf('SENT')<0) mail.push(Object.assign({threadId:id}, m)); });
+      fatti++; posta.msg='Lettura delle conversazioni… '+fatti+'/'+thread.length; renderPostaStato(); } };
+    await Promise.all([lavora(),lavora(),lavora()]);
+    mail.forEach(m=>{ m.scarto=motivoScarto(m.subject, m.plaintextBody) || motivoScarto(estraiOriginale(m.plaintextBody).oggetto, '');
+      m.a=analizzaMail(m); m.ts=+m.internalDate || Date.parse(m.date) || 0; });
+    mail.sort((x,y)=>y.ts-x.ts);
+    const scartate=mail.filter(m=>m.scarto).length;
+    posta.mail=mail.filter(m=>!m.scarto); posta.caricata=true; posta.stato='ok';
+    posta.msg='Aggiornato alle '+new Date().toTimeString().slice(0,5)+' · '+posta.mail.length+' messaggi'+
+      (scartate?' · '+scartate+' conferme di lettura / ricevute PEC non mostrate':'');
+  }catch(e){ posta.stato='errore'; posta.msg=testoErrore(e); }
+  renderPosta();
+}
+async function idEtichetta(){
+  if(statoPosta().labelId) return statoPosta().labelId;
+  const trova=async()=>{ const pl=await leggiGmail('list_labels',{}); const l=(pl.labels||[]).find(x=>x.name===LABEL_SMISTATA); return l?l.labelId:''; };
+  let id=await trova();
+  if(!id){ const mcp=await mcpPronto; await mcp.callTool(GMAIL,'create_label',{displayName:LABEL_SMISTATA}); id=await trova(); }
+  if(id){ statoPosta().labelId=id; save(); }
+  return id;
+}
+async function etichettaGmail(m, togli){
+  try{
+    const mcp=await mcpPronto; if(!mcp) return;
+    const id=await idEtichetta(); if(!id) return;
+    await mcp.callTool(GMAIL, togli?'unlabel_message':'label_message', {messageId:m.id, labelIds:[id]});
+    m.labelIds = togli ? (m.labelIds||[]).filter(x=>x!==id) : (m.labelIds||[]).concat([id]);
+  }catch(e){ toast('Etichetta Gmail non '+(togli?'rimossa':'applicata')+': '+testoErrore(e)); }
+}
+function smistata(m){
+  return !!statoPosta().smistati[m.id] || (!!statoPosta().labelId && (m.labelIds||[]).indexOf(statoPosta().labelId)>=0);
+}
+
+/* ---------- modulo di smistamento ---------- */
+function formMail(m){
+  if(posta.form[m.id]) return posta.form[m.id];
+  const a=m.a, ab=abbinaPosizione(a);
+  return posta.form[m.id] = { nome:a.nome, forma:normalizzaForma(a.nome.match(/\b(S\.?R\.?L\.?S|S\.?R\.?L|S\.?A\.?S|S\.?P\.?A|S\.?N\.?C)\.?\b/i)?.[0]||''),
+    codici:a.codici.join(' / '), piva:a.piva, pec:'', sede:'', importo:a.importo!=null?a.importo:'',
+    posizione: ab.pos?ab.pos.id:'', come: ab.come, completa:true, fatture:[], usaFatture:true,
+    riconoscimento:null, sintesi:'', daVerificare:[], automatiche:(a.verifiche||[]).slice() };
+}
+function applicaAnalisi(m, r){
+  const f=formMail(m), d=(r&&r.debitore)||{};
+  const se=(k,v)=>{ if(v!==undefined && v!==null && String(v).trim()!=='' && (f[k]===''||f[k]==null)) f[k]=v; };
+  se('nome',d.nome); se('sede',d.sede); se('pec',d.pec);
+  if(d.piva && String(d.piva).replace(/\D/g,'')!==PIVA_CA) se('piva',String(d.piva).replace(/\D/g,''));
+  if(d.forma && !f.forma) f.forma=normalizzaForma(d.forma);
+  if(Array.isArray(r.codici_cliente) && r.codici_cliente.length && !f.codici) f.codici=r.codici_cliente.join(' / ');
+  if(r.importo_scaduto!=null && f.importo==='') f.importo=num(r.importo_scaduto);
+  f.fatture=(Array.isArray(r.fatture)?r.fatture:[]).filter(x=>x && (x.numero||x.importo));
+  f.riconoscimento=r.riconoscimento_debito&&r.riconoscimento_debito.presente ? r.riconoscimento_debito : null;
+  f.pagamenti=Array.isArray(r.pagamenti)?r.pagamenti.filter(x=>x&&x.importo):[];
+  f.sintesi=r.sintesi||''; f.daVerificare=Array.isArray(r.da_verificare)?r.da_verificare:[];
+  if(r.importo_scaduto!=null && m.a.importo!=null && Math.abs(num(r.importo_scaduto)-m.a.importo)>=0.005)
+    f.daVerificare.push('Claude legge un importo scaduto di '+fmtEuro(r.importo_scaduto)+', il testo della mail '+fmtEuro(m.a.importo)+': controllare');
+  if(!f.posizione){ const ab=abbinaPosizione({oggetto:m.a.oggetto, piva:f.piva, codici:String(f.codici).split(/\s*\/\s*/).filter(Boolean), nome:f.nome});
+    if(ab.pos){ f.posizione=ab.pos.id; f.come=ab.come; } }
+}
+async function analizzaConClaude(m){
+  const sample=await samplePronto;
+  if(!sample){ toast('L\'analisi con Claude non è disponibile in questa vista'); return; }
+  posta.analisiInCorso[m.id]=true; renderPosta();
+  const a=m.a;
+  const prompt=
+'Sei l\'assistente di uno studio legale che cura il recupero crediti per Como Acqua s.r.l. ("CA", gestore del servizio idrico).\n'+
+'Leggi l\'email qui sotto (scritta da CA e inoltrata dallo studio) e rispondi SOLO con un oggetto JSON con esattamente questa forma:\n'+
+'{"tipo":"nuova_pratica|aggiornamento|pagamento|richiesta_info|altro","debitore":{"nome":"","forma":"","sede":"","piva":"","pec":""},'+
+'"codici_cliente":[],"importo_scaduto":null,"pagamenti":[{"data":"AAAA-MM-GG","importo":0}],'+
+'"fatture":[{"numero":"","data":"AAAA-MM-GG","scadenza":"AAAA-MM-GG","importo":0}],'+
+'"riconoscimento_debito":{"presente":false,"descrizione":""},"sintesi":"","da_verificare":[]}\n'+
+'Regole: non inventare nulla, lascia "" o null o [] se il dato non c\'è; importi come numeri con il punto decimale; date in formato AAAA-MM-GG; '+
+'P.IVA di 11 cifre (la P.IVA 03522110133 è di Como Acqua, NON del debitore); ignora firme e disclaimer; '+
+'un piano di rientro (PDR) firmato dal debitore vale come riconoscimento di debito; '+
+'"sintesi": 2-3 frasi in italiano su cosa comunica o chiede CA; "da_verificare": dubbi o dati mancanti importanti.\n'+
+'Leggi TUTTA l\'email: può contenere più posizioni («Dettaglio Posizione 1, 2…», una per codice cliente/utenza): riportale tutte in "codici_cliente". '+
+'Verifica SEMPRE che l\'IMPORTO TOTALE SCADUTO coincida con la somma degli importi delle posizioni e segnala in "da_verificare" ogni differenza; '+
+'segnala anche società in liquidazione, P.IVA o utenze cessate, S.n.c./S.a.s., indirizzo di fornitura diverso dalla sede, PEC mancante. '+
+'"sede" è l\'indirizzo della SEDE LEGALE (via e civico, CAP, comune), non quello di fornitura.\n\n'+
+'OGGETTO: '+a.oggetto+'\nDATA: '+(a.orig.data||'')+'\nMITTENTE ORIGINALE: '+(a.orig.da||m.sender||'')+
+'\nALLEGATI: '+allegatiVeri(m).map(x=>x.filename).join('; ')+'\n\nTESTO:\n'+a.corpo.slice(0,14000);
+  try{
+    const r=await sample.json(prompt, {modelTier:'default'});
+    if(!r || typeof r!=='object') throw {code:'invalid_json'};
+    posta.analisi[m.id]=r; applicaAnalisi(m, r); toast('Analisi completata: controlla i dati proposti');
+  }catch(e){
+    const c=e&&e.code;
+    toast(c==='not_granted'||c==='sampling_disabled' ? 'Analisi con Claude non consentita in questa vista'
+      : c==='rate_limited' ? 'Troppe richieste a Claude: riprova tra qualche minuto'
+      : c==='invalid_json' ? 'Risposta di Claude non leggibile: riprova'
+      : c==='cancelled' ? 'Analisi annullata' : 'Analisi non riuscita: '+((e&&e.message)||c||e));
+  }finally{ delete posta.analisiInCorso[m.id]; renderPosta(); }
+}
+
+/* ---------- azioni di smistamento ---------- */
+function comunicazioneDaMail(m, p){
+  if(db.comunicazioni.some(c=>c.gmail && c.gmail.messageId===m.id && c.posizione===p.id)) return false;
+  const a=m.a, f=formMail(m);
+  db.comunicazioni.push({ id:uid(), data:a.orig.data || iso(new Date(m.ts||Date.now())), tipo:a.daCA?'cliente':'altro',
+    soggetto:a.orig.da || m.sender || '', canale:'Email', posizione:p.id, oggetto:a.oggetto,
+    nota:(f.sintesi ? f.sintesi+'\n\n' : '') + a.corpo.slice(0,1500),
+    gmail:{messageId:m.id, threadId:m.threadId, url:m.viewUrl||''}, allegati:allegatiVeri(m).map(x=>x.filename) });
+  return true;
+}
+function completaPosizione(p, f){
+  const d=p.debitore, fatte=[];
+  const se=(k,v,et)=>{ if(v!==undefined && v!==null && String(v).trim()!=='' && !String(d[k]||'').trim()){ d[k]=String(v).trim(); fatte.push(et); } };
+  se('nome',f.nome,'denominazione'); se('piva',f.piva,'P.IVA'); se('pec',f.pec,'PEC');
+  if(f.sede && !String(d.sede||'').trim() && !String(d.indirizzo||'').trim()){
+    const x=dividiSede(f.sede);
+    if(x){ d.indirizzo=x.via; d.cap=x.cap; d.sede=x.comune; } else d.sede=String(f.sede).trim();
+    d.sedeDivisa=true; fatte.push('sede');
+  }
+  if(f.forma && !d.forma){ d.forma=normalizzaForma(f.forma); fatte.push('forma giuridica'); }
+  const nuovi=String(f.codici||'').split(/\s*\/\s*/).filter(Boolean).filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  if(nuovi.length){ d.codici=[d.codici].concat(nuovi).filter(Boolean).join(' / '); fatte.push('codici cliente'); }
+  if(f.usaFatture && f.fatture && f.fatture.length){
+    const visti=new Set(p.fatture.map(x=>String(x.numero||'').replace(/\s/g,'').toLowerCase()));
+    let n=0;
+    f.fatture.forEach(x=>{ const k=String(x.numero||'').replace(/\s/g,'').toLowerCase(); if(k && visti.has(k)) return;
+      p.fatture.push({id:uid(), numero:String(x.numero||''), data:x.data||'', scadenza:x.scadenza||'', importo:num(x.importo), pagato:0}); visti.add(k); n++; });
+    if(n) fatte.push(n+' fatture');
+  }
+  if(!p.fatture.length && f.importo!=='' && f.importo!=null && (p.importo===''||p.importo==null)){ p.importo=num(f.importo); fatte.push('importo'); }
+  if(f.riconoscimento && !p.riconoscimento.presente){
+    p.riconoscimento.presente=true; p.riconoscimento.nota=p.riconoscimento.nota||String(f.riconoscimento.descrizione||'Indicato nella mail di CA'); fatte.push('riconoscimento di debito'); }
+  return fatte;
+}
+function segnaSmistata(m, azione, p){
+  statoPosta().smistati[m.id]={azione, posizione:p?p.id:'', data:oggi()};
+  etichettaGmail(m, false);
+}
+function creaDaMail(m){
+  const f=formMail(m);
+  if(!String(f.nome||'').trim()){ toast('Indica la denominazione del debitore'); return; }
+  const p=nuovaPosizione(), a=m.a;
+  p.apertura=oggi();
+  p.note='Pratica aperta dalla mail di CA del '+fmtData(a.orig.data)+': '+a.oggetto;
+  completaPosizione(p, f);
+  p.eventi.push({data:a.orig.data||oggi(), testo:'Pratica ricevuta da CA via email: '+a.oggetto});
+  db.posizioni.unshift(p);
+  comunicazioneDaMail(m, p); segnaSmistata(m,'creata',p);
+  delete posta.form[m.id]; posta.aperta=null;
+  save(); renderAll(); renderPosta(); toast('Creata la posizione '+p.codice); apri(p.id);
+}
+function registraSuPosizione(m){
+  const f=formMail(m), p=getPos(f.posizione);
+  if(!p){ toast('Scegli la posizione a cui collegare la mail'); return; }
+  const a=m.a;
+  const fatte=f.completa ? completaPosizione(p, f) : [];
+  let ev='Mail di CA: '+a.oggetto;
+  if(a.pagamento) ev+=' (pagamento comunicato: '+fmtEuro(a.pagamento)+')';
+  if(!p.eventi.some(e=>e.testo===ev)) p.eventi.push({data:a.orig.data||oggi(), testo:ev});
+  comunicazioneDaMail(m, p); segnaSmistata(m,'registrata',p);
+  delete posta.form[m.id]; posta.aperta=null;
+  save(); renderAll(); renderPosta();
+  toast('Registrata su '+p.codice+(fatte.length?' · completati: '+fatte.join(', '):''));
+}
+function ignoraMail(m){ segnaSmistata(m,'ignorata',null); posta.aperta=null; save(); renderPosta(); toast('Mail segnata come non rilevante'); }
+function ripristinaMail(m){
+  delete statoPosta().smistati[m.id]; etichettaGmail(m, true).then(renderPosta);
+  save(); renderPosta(); toast('Mail rimessa tra quelle da smistare');
+}
+
+/* ---------- rendering ---------- */
+function renderPostaStato(){
+  const el=$('#postaStato'); if(!el) return;
+  el.className='post-stato '+(posta.stato==='errore'?'err':'');
+  el.textContent=posta.stato==='caricamento' ? '⏳ '+posta.msg : posta.msg;
+}
+function contaDaSmistare(){ return posta.mail.filter(m=>!smistata(m)).length; }
+function renderPosta(){
+  const cnt=$('#cntPosta'); if(cnt) cnt.textContent=posta.caricata?contaDaSmistare():'–';
+  const box=$('#postaBox'); if(!box) return;
+  renderPostaStato();
+  if(!IN_ARTEFATTO){
+    box.innerHTML='<div class="card com-empty">📥 La posta di <b>cagestionale@gmail.com</b> si legge dal gestionale aperto su <b>claude.ai</b> '+
+      '(artefatto «Gestionale Recupero Crediti — Cliente CA»), che usa il tuo connettore Gmail. Questa copia locale non può collegarsi a Gmail.</div>';
+    return;
+  }
+  if(!posta.caricata){
+    box.innerHTML = posta.stato==='caricamento' ? '<div class="card com-empty">⏳ Lettura della casella Gmail…</div>'
+      : '<div class="card com-empty">'+(posta.stato==='errore'?'⚠ '+esc(posta.msg)+'<br><br>':'')+
+        'Premi <b>⟳ Aggiorna da Gmail</b> per leggere le mail inoltrate a cagestionale@gmail.com. Al primo accesso claude.ai chiede il consenso per Gmail.</div>';
+    return;
+  }
+  const tutte=$('#postaMostraSmistate') && $('#postaMostraSmistate').checked;
+  const list=posta.mail.filter(m=>tutte || !smistata(m));
+  if(!list.length){ box.innerHTML='<div class="card com-empty">✓ Nessuna mail da smistare.'+(posta.mail.length?' Spunta «mostra anche le mail già smistate» per rivederle.':'')+'</div>'; return; }
+  box.innerHTML=list.map(htmlMail).join('');
+}
+const TIPO_MAIL={nuova:['Nuova pratica','nuova'], aggiornamento:['Aggiornamento','agg'], comunicazione:['Comunicazione','com']};
+function htmlMail(m){
+  const a=m.a, sm=smistata(m), aperta=posta.aperta===m.id, s=statoPosta().smistati[m.id];
+  const t=a.daCA ? TIPO_MAIL[a.tipo] : ['Non da CA','altro'];
+  const ab=sm?null:abbinaPosizione(a), pSm=s&&s.posizione?getPos(s.posizione):null;
+  const all=allegatiVeri(m);
+  let h='<div class="mail'+(sm?' sm':'')+(aperta?' open':'')+'">'+
+    '<div class="mail-head" data-act="postaApri" data-id="'+esc(m.id)+'">'+
+      '<span class="com-date">'+fmtData(a.orig.data || iso(new Date(m.ts||0)))+'</span>'+
+      '<span class="b-mail '+t[1]+'">'+t[0]+'</span>'+
+      '<span class="mail-ogg">'+esc(a.oggetto||m.subject||'(senza oggetto)')+'</span>'+
+      (sm ? '<span class="b-sm">✓ '+esc(s?({creata:'posizione creata',registrata:'registrata',ignorata:'ignorata'}[s.azione]||'smistata'):'smistata')+
+              (pSm?' · '+esc(pSm.codice):'')+'</span>'
+          : (ab.pos?'<span class="b-pos2">↔ '+esc(ab.pos.codice)+'</span>':(a.tipo==='nuova'?'<span class="b-new">nuova</span>':'')))+
+      (all.length?'<span class="b-all">📎 '+all.length+'</span>':'')+
+      ((a.verifiche||[]).some(x=>/^IMPORTO TOTALE/.test(x))?'<span class="b-new" title="Il totale non coincide con la somma delle posizioni">⚠ importo</span>':'')+
+    '</div>';
+  if(aperta) h+=htmlMailDettaglio(m);
+  return h+'</div>';
+}
+function htmlMailDettaglio(m){
+  const a=m.a, f=formMail(m), sm=smistata(m), all=allegatiVeri(m), inCorso=!!posta.analisiInCorso[m.id];
+  const inp=(k,lab,type)=>'<label class="field"><span>'+lab+'</span><input type="'+(type||'text')+'" data-pf="'+esc(m.id)+'|'+k+'" value="'+esc(f[k]==null?'':f[k])+'"'+(type==='number'?' step="0.01"':'')+'></label>';
+  let h='<div class="mail-body">'+
+    '<div class="mail-meta">Da: <b>'+esc(a.orig.da||m.sender||'')+'</b>'+(a.orig.email?' &lt;'+esc(a.orig.email)+'&gt;':'')+
+      ' · inoltrata da '+esc(m.sender||'')+
+      (m.viewUrl?' · <a href="'+esc(m.viewUrl)+'" target="_blank" rel="noopener">apri in Gmail ↗</a>':'')+'</div>'+
+    (all.length?'<div class="mail-all">'+all.map(x=>'<span class="chip-all">📎 '+esc(x.filename)+'</span>').join('')+'</div>':'');
+  if(f.automatiche && f.automatiche.length)
+    h+='<div class="mail-ai" style="background:var(--amber-l)"><b>⚠ Controlli automatici</b>'+f.automatiche.map(x=>'<div class="dv">'+esc(x)+'</div>').join('')+'</div>';
+  if(a.posizioni && a.posizioni.length>1)
+    h+='<div class="desc" style="margin:0 0 8px">Posizioni nella mail: '+a.posizioni.map(x=>'n. '+x.n+' '+fmtEuro(x.importo)).join(' · ')+'</div>';
+  if(f.sintesi || f.daVerificare.length || f.riconoscimento || (f.pagamenti&&f.pagamenti.length)){
+    h+='<div class="mail-ai"><b>🤖 Analisi di Claude</b>'+(f.sintesi?'<div>'+esc(f.sintesi)+'</div>':'')+
+      (f.riconoscimento?'<div>✓ Riconoscimento di debito: '+esc(f.riconoscimento.descrizione||'sì')+'</div>':'')+
+      ((f.pagamenti&&f.pagamenti.length)?'<div>Pagamenti indicati: '+f.pagamenti.map(x=>fmtEuro(x.importo)+(x.data?' del '+fmtData(x.data):'')).join(', ')+'</div>':'')+
+      (f.daVerificare.length?'<div class="dv">Da verificare: '+f.daVerificare.map(esc).join(' · ')+'</div>':'')+'</div>';
+  }
+  if(!sm){
+    h+='<div class="grid mail-form">'+inp('nome','Debitore')+inp('forma','Forma giuridica')+inp('codici','Codici cliente CA')+
+      inp('piva','P.IVA / C.F.')+inp('pec','PEC')+inp('sede','Sede')+inp('importo','Importo scaduto indicato (€)','number')+
+      '<label class="field"><span>Posizione nel gestionale'+(f.come?' <i>(trovata per '+esc(f.come)+')</i>':'')+'</span>'+
+      '<select data-pf="'+esc(m.id)+'|posizione"><option value="">＋ Nuova posizione</option>'+
+      db.posizioni.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===f.posizione?' selected':'')+'>'+esc(p.codice+' · '+(p.debitore.nome||''))+'</option>').join('')+
+      '</select></label></div>';
+    if(f.fatture && f.fatture.length) h+='<label class="chk"><input type="checkbox" data-pf="'+esc(m.id)+'|usaFatture"'+(f.usaFatture?' checked':'')+'> aggiungi le '+f.fatture.length+
+      ' fatture trovate da Claude ('+f.fatture.map(x=>esc(x.numero||'s.n.')+' '+fmtEuro(x.importo)).join(', ')+')</label>';
+    if(f.posizione) h+='<label class="chk"><input type="checkbox" data-pf="'+esc(m.id)+'|completa"'+(f.completa?' checked':'')+'> completa i campi vuoti della posizione con questi dati (non sovrascrive nulla)</label>';
+    h+='<div class="add-ev">'+
+      (f.posizione ? '<button class="btn-ind" data-act="postaRegistra" data-id="'+esc(m.id)+'">✓ Registra sulla posizione</button>'
+                   : '<button class="btn-ind" data-act="postaCrea" data-id="'+esc(m.id)+'">＋ Crea posizione</button>')+
+      '<button class="mini" data-act="postaAnalizza" data-id="'+esc(m.id)+'"'+(inCorso?' disabled':'')+'>'+(inCorso?'⏳ Claude sta leggendo…':'🤖 Analizza con Claude')+'</button>'+
+      '<span class="grow"></span><button class="mini grey" data-act="postaIgnora" data-id="'+esc(m.id)+'">Ignora</button></div>';
+  }else{
+    h+='<div class="add-ev"><button class="mini" data-act="postaRipristina" data-id="'+esc(m.id)+'">↺ Rimetti da smistare</button></div>';
+  }
+  const aperto=!!posta.testo[m.id];
+  h+='<button class="link" data-act="postaTesto" data-id="'+esc(m.id)+'">'+(aperto?'▾ nascondi testo':'▸ mostra testo della mail')+'</button>'+
+     (aperto?'<pre class="mail-txt">'+esc(a.corpo)+'</pre>':'');
+  return h+'</div>';
+}
+function mailById(id){ return posta.mail.find(m=>m.id===id); }
 
 /* ---------------- inizializzazione ---------------- */
 (async function init(){
@@ -927,7 +1425,7 @@ function importaJson(){ $('#importFile').click(); }
   if(!db){ db={versione:2, aggiornato:Date.now(), posizioni:[esempioPosizione()], comunicazioni:[]}; save(); }
   renderAll();
   resetComForm();
-  caricaModelli();
+  setTimeout(caricaModelli,0); // dopo la fine dello script: «modelli» è dichiarato più avanti
   if(pendingPerm) aggiornaStatus('📁 Cartella collegata — conferma il permesso con «Ricarica dal file»','warn');
   else aggiornaStatus();
 })();
@@ -1001,7 +1499,7 @@ function posizioniVista(){
   const q=filtri.q.trim().toLowerCase();
   if(q) list=list.filter(p=>{
     const f=p.fasi||{};
-    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.note,p.promemoria&&p.promemoria.testo,
+    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.debitore.codici,p.note,p.promemoria&&p.promemoria.testo,
             f.ricorso&&f.ricorso.rg,f.decreto&&f.decreto.numero,f.esecuzione&&f.esecuzione.nota]
            .concat((p.fatture||[]).map(x=>x.numero))
            .concat((p.annotazioni||[]).map(x=>x.testo))
@@ -1241,6 +1739,7 @@ function renderDetail(){
       campo(p,'debitore.sede','Comune sede legale (prov.)')+
       campo(p,'debitore.piva','P. IVA / C.F.')+
       campo(p,'debitore.pec','PEC')+
+      campo(p,'debitore.codici','Codici cliente CA (es. C681 / 013206002719)')+
       campo(p,'codice','Codice posizione')+
     '</div></div>'+
 
@@ -1320,7 +1819,7 @@ function aggiornaScadenzePanel(){
 /* ---------------- render generale ---------------- */
 function renderAll(){
   renderKpis(); renderChips(); renderTable(); if(openId) renderDetail();
-  renderCom(); renderComPosOptions();
+  renderCom(); renderComPosOptions(); renderPosta();
 }
 
 /* ---------------- sezione comunicazioni ---------------- */
@@ -1378,8 +1877,10 @@ function renderCom(){
           '<button class="del" data-act="eliminaCom" data-id="'+c.id+'">Elimina</button>'+
         '</span>'+
       '</div>'+
-      (c.oggetto?'<div class="com-oggetto">'+esc(c.oggetto)+'</div>':'')+
+      (c.oggetto?'<div class="com-oggetto">'+esc(c.oggetto)+
+        (c.gmail&&c.gmail.url?' <a class="com-gmail" href="'+esc(c.gmail.url)+'" target="_blank" rel="noopener">✉ Gmail ↗</a>':'')+'</div>':'')+
       (c.nota?'<div class="com-nota">'+esc(c.nota)+'</div>':'')+
+      (c.allegati&&c.allegati.length?'<div class="com-all">📎 '+c.allegati.map(esc).join(' · ')+'</div>':'')+
     '</div>';
   }).join('');
 }
@@ -1395,7 +1896,7 @@ function resetComForm(){
 function salvaCom(){
   const data=$('#comData').value||oggi();
   const oggetto=$('#comOggetto').value.trim(), nota=$('#comNota').value.trim();
-  if(!oggetto && !nota){ alert('Inserire almeno un oggetto o una nota.'); $('#comOggetto').focus(); return; }
+  if(!oggetto && !nota){ avviso('Inserire almeno un oggetto o una nota.'); $('#comOggetto').focus(); return; }
   const rec={ data, tipo:$('#comTipo').value, soggetto:$('#comSoggetto').value.trim(),
     canale:$('#comCanale').value, posizione:$('#comPos').value, oggetto, nota };
   if(comEditing){
@@ -1423,9 +1924,9 @@ function modificaCom(id){
   $('#comAnnulla').style.display='';
   $('#comForm').scrollIntoView({behavior:'smooth', block:'start'});
 }
-function eliminaCom(id){
+async function eliminaCom(id){
   const c=db.comunicazioni.find(x=>x.id===id); if(!c) return;
-  if(!confirm('Eliminare la comunicazione del '+fmtData(c.data)+'?')) return;
+  if(!(await conferma('Eliminare la comunicazione del '+fmtData(c.data)+'?', {ok:'Elimina', pericolo:true}))) return;
   db.comunicazioni=db.comunicazioni.filter(x=>x.id!==id);
   if(comEditing===id) resetComForm();
   save(); renderAll(); toast('Comunicazione eliminata');
@@ -1436,6 +1937,8 @@ function setView(v){
   $('#viewCom').classList.toggle('hidden', v!=='comunicazioni');
   $('#viewModelli').classList.toggle('hidden', v!=='modelli');
   if(v==='modelli') renderModelli();
+  $('#viewPosta').classList.toggle('hidden', v!=='posta');
+  if(v==='posta' && IN_ARTEFATTO && !posta.caricata && posta.stato!=='caricamento') postaAggiorna();
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===v));
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -1466,13 +1969,14 @@ function avanzaFase(p){
 /* Riporta indietro di una fase (correzione di un «Registra e passa alla successiva» premuto per errore).
    I dati inseriti nella fase (date, esito) restano; si tolgono solo la registrazione nello storico
    e l'evento automatico. */
-function indietroFase(p){
+async function indietroFase(p){
   const completata=faseCompletata(p);
   const n = completata ? 6 : p.fase-1;
   if(n<1) return;
   const F=FASI[n-1];
-  if(!confirm('Riportare la posizione alla fase '+n+' «'+F.titolo+'»?\n\n'+
-    'La fase non risulterà più completata. I dati già inseriti (date, esito) restano e si possono correggere.')) return;
+  if(!(await conferma('Riportare la posizione alla fase '+n+' «'+F.titolo+'»?\n\n'+
+    'La fase non risulterà più completata. I dati già inseriti (date, esito) restano e si possono correggere.',
+    {ok:'Torna alla fase '+n}))) return;
   p.storico=p.storico.filter(s=>s.fase<n);
   const testo={1:'Messa in mora inviata / esito registrato',2:'Deposito del ricorso per ingiunzione',
     3:'Decreto ingiuntivo emesso',4:'Notifica del decreto ingiuntivo',
@@ -1486,31 +1990,55 @@ function indietroFase(p){
 }
 function nuova(){ const p=nuovaPosizione(); db.posizioni.unshift(p); save(); renderAll(); apri(p.id);
   setTimeout(()=>{ const el=$('#panel [data-path="debitore.nome"]'); if(el) el.focus(); },60); }
-function elimina(id){
+async function elimina(id){
   const p=getPos(id); if(!p) return;
-  if(!confirm('Eliminare definitivamente la posizione "'+(p.codice||'')+' — '+(p.debitore.nome||'')+'"?')) return;
+  if(!(await conferma('Eliminare definitivamente la posizione "'+(p.codice||'')+' — '+(p.debitore.nome||'')+'"?\nL\'operazione non si può annullare.', {ok:'Elimina posizione', pericolo:true}))) return;
+  if(!getPos(id)) return;
   db.posizioni=db.posizioni.filter(x=>x.id!==id);
   save(); closePanel(); renderAll(); toast('Posizione eliminata');
 }
+/* finestre di dialogo nella pagina: nell'artefatto claude.ai alert() e confirm() del browser sono bloccati */
+function dialogo(msg, opz){
+  opz=opz||{};
+  return new Promise(res=>{
+    const bg=document.createElement('div'); bg.className='dlg-bg';
+    bg.innerHTML='<div class="dlg" role="dialog" aria-modal="true"><div class="dlg-msg"></div><div class="dlg-bt">'+
+      (opz.annulla!==false?'<button class="dlg-no" id="dlgAnnulla"></button>':'')+
+      '<button class="dlg-ok'+(opz.pericolo?' danger':'')+'" id="dlgOk"></button></div></div>';
+    bg.querySelector('.dlg-msg').textContent=msg;
+    bg.querySelector('#dlgOk').textContent=opz.ok||'OK';
+    const no=bg.querySelector('#dlgAnnulla'); if(no) no.textContent=opz.annulla||'Annulla';
+    const chiudi=v=>{ document.removeEventListener('keydown', tasti, true); bg.remove(); res(v); };
+    const tasti=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); chiudi(opz.annulla===false); }
+                     else if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); chiudi(true); } };
+    document.addEventListener('keydown', tasti, true);
+    bg.addEventListener('click', e=>{ e.stopPropagation();
+      if(e.target.id==='dlgOk') chiudi(true); else if(e.target.id==='dlgAnnulla') chiudi(false); });
+    document.body.appendChild(bg);
+    setTimeout(()=>bg.querySelector('#dlgOk').focus(),0);
+  });
+}
+function conferma(msg, opz){ return dialogo(msg, opz); }
+function avviso(msg){ return dialogo(msg, {annulla:false}); }
 function toast(msg){
   const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
   document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
 }
 function apriCartella(){
   const p=getPos(openId); const path=(p&&p.cartella||'').trim();
-  if(!path){ alert('Nessun percorso inserito nel campo «Cartella pratica».'); return; }
+  if(!path){ avviso('Nessun percorso inserito nel campo «Cartella pratica».'); return; }
   const url='file:///'+path.replace(/\\/g,'/').replace(/^\/+/,'');
   window.open(url,'_blank');
 }
 function copiaCartella(){
   const p=getPos(openId); const path=(p&&p.cartella||'').trim();
-  if(!path){ alert('Nessun percorso inserito.'); return; }
+  if(!path){ avviso('Nessun percorso inserito.'); return; }
   const done=()=>toast('Percorso copiato');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(path).then(done).catch(()=>fallback());
   }else fallback();
   function fallback(){ const ta=document.createElement('textarea'); ta.value=path; document.body.appendChild(ta);
-    ta.select(); try{document.execCommand('copy'); done();}catch(e){alert(path);} ta.remove(); }
+    ta.select(); try{document.execCommand('copy'); done();}catch(e){avviso(path);} ta.remove(); }
 }
 
 /* ================================================================
@@ -1590,7 +2118,7 @@ function salvaNota(posId, ctx, box){
   const p=getPos(posId); if(!p) return;
   const testo=box.querySelector('.nf-testo').value.trim(), data=box.querySelector('.nf-data').value, avviso=box.querySelector('.nf-avviso').checked;
   if(!testo){ box.querySelector('.nf-testo').focus(); return; }
-  if(avviso && !data){ alert('Per «avvisami alla data» serve una data.'); box.querySelector('.nf-data').focus(); return; }
+  if(avviso && !data){ box.querySelector('.nf-data').focus(); toast('Per «avvisami alla data» serve una data'); return; }
   const ed = notaAperta && notaAperta.ctx===ctx && notaAperta.editId ? p.annotazioni.find(n=>n.id===notaAperta.editId) : null;
   if(ed) Object.assign(ed,{testo,data,avviso});
   else p.annotazioni.push({id:uid(), testo, data, avviso, fatta:false, creata:oggi()});
@@ -1882,18 +2410,18 @@ async function sincronizzaModelli(silenzioso){
       if(!es) modelli.push(rec);
       await idbModello('put', rec); nuovi++;
     }
-  }catch(e){ if(!silenzioso) alert('Lettura della cartella '+CARTELLA_MODELLI+' non riuscita: '+e.message); }
+  }catch(e){ if(!silenzioso) avviso('Lettura della cartella '+CARTELLA_MODELLI+' non riuscita: '+e.message); }
   if(nuovi){ renderModelli(); if(!silenzioso) toast(nuovi+' modelli aggiornati dalla cartella'); }
 }
 async function aggiungiModelli(files){
   await leggiModelliIdb();
   let n=0;
   for(const f of files){
-    if(!/\.docx$/i.test(f.name)){ alert('«'+f.name+'» non è un file .docx.\nAprire il modello in Word e usare «Salva con nome → Documento di Word (.docx)».'); continue; }
+    if(!/\.docx$/i.test(f.name)){ avviso('«'+f.name+'» non è un file .docx.\nAprire il modello in Word e usare «Salva con nome → Documento di Word (.docx)».'); continue; }
     const buf=await f.arrayBuffer();
-    try{ zipLeggi(buf); }catch(e){ alert('«'+f.name+'»: '+e.message); continue; }
+    try{ zipLeggi(buf); }catch(e){ avviso('«'+f.name+'»: '+e.message); continue; }
     let rec=modelli.find(m=>m.fileName===f.name);
-    if(rec && !rec.nascosto && !confirm('Esiste già un modello «'+f.name+'». Sostituirlo?')) continue;
+    if(rec && !rec.nascosto && !(await conferma('Esiste già un modello «'+f.name+'». Sostituirlo?',{ok:'Sostituisci'}))) continue;
     rec=Object.assign(rec||{id:uid(), nome:f.name.replace(/\.docx$/i,'').replace(/_/g,' '), tipo:tipoDaNome(f.name)},
       {fileName:f.name, size:f.size, lastModified:f.lastModified, aggiunto:oggi(), origine:'caricato', nascosto:false, buf});
     if(modelli.indexOf(rec)<0) modelli.push(rec);
@@ -1938,9 +2466,9 @@ function renderModelli(){
 async function salvaFile(nome, blob){
   if(IN_ARTEFATTO){
     const dl=await downloadsPronto;
-    if(!dl){ alert('Il salvataggio dei file non è disponibile in questa vista.'); return false; }
+    if(!dl){ avviso('Il salvataggio dei file non è disponibile in questa vista.'); return false; }
     try{ await dl.save({filename:nome, data:blob}); return true; }
-    catch(err){ const c=err&&err.code; if(c!=='declined') alert('Salvataggio non riuscito: '+((err&&err.message)||c||err)); return false; }
+    catch(err){ const c=err&&err.code; if(c!=='declined') avviso('Salvataggio non riuscito: '+((err&&err.message)||c||err)); return false; }
   }
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
@@ -2017,8 +2545,8 @@ async function eseguiGeneraMora(btn){
     cap:g('gm-cap'), comune:g('gm-comune'), debito:g('gm-debito'), spese:g('gm-spese'),
     causa:(document.querySelector('input[name="gm-causa"]:checked')||{}).value||'fatture'});
   v.causaFrase = v.causa==='fatture' ? FRASE_FATTURE : FRASE_PDR;
-  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v.data)){ alert('Data della lettera nel formato gg/mm/aaaa.'); return; }
-  if(!v.debitore || !v.debito){ alert('Debitore e importo sono obbligatori.'); return; }
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v.data)){ avviso('Data della lettera nel formato gg/mm/aaaa.'); return; }
+  if(!v.debitore || !v.debito){ avviso('Debitore e importo sono obbligatori.'); return; }
   btn.disabled=true; btn.textContent='Generazione…';
   try{
     const {blob, rep}=await compilaDocx(m.buf, v);
@@ -2043,7 +2571,7 @@ async function eseguiGeneraMora(btn){
     btn.textContent='✓ Generata';
     const ann=$('#modal .mf .btn-out'); if(ann) ann.textContent='Chiudi';
   }catch(e){
-    alert('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx';
+    avviso('Generazione non riuscita: '+e.message); btn.disabled=false; btn.textContent='⬇ Genera e scarica .docx';
   }
 }
 function chiudiModal(){ $('#modal').classList.add('hidden'); $('#modal').innerHTML=''; }
@@ -2067,9 +2595,11 @@ document.addEventListener('click', e=>{
     const box=document.querySelector(t.dataset.ctx==='pop'?'#popNote .nf-testo':'#panelNote .nf-testo'); if(box) box.focus(); return; }
   if(act==='notaElimina'||act==='notaFatta'){ const p=getPos(t.dataset.pos); if(!p) return;
     const n=p.annotazioni.find(x=>x.id===t.dataset.n); if(!n) return;
-    if(act==='notaElimina'){ if(!confirm('Eliminare la nota?\n«'+n.testo+'»')) return; p.annotazioni=p.annotazioni.filter(x=>x!==n); }
-    else n.fatta=!n.fatta;
-    save(); renderKpis(); renderTable(); aggiornaScadenzePanel(); ridisegnaEditorNote(p, t.dataset.ctx); return; }
+    const ctx=t.dataset.ctx;
+    const fine=()=>{ save(); renderKpis(); renderTable(); aggiornaScadenzePanel(); ridisegnaEditorNote(p, ctx); };
+    if(act==='notaElimina'){ conferma('Eliminare la nota?\n«'+n.testo+'»',{ok:'Elimina',pericolo:true}).then(ok=>{
+      if(!ok) return; p.annotazioni=p.annotazioni.filter(x=>x!==n); fine(); }); return; }
+    n.fatta=!n.fatta; fine(); return; }
   /* v1.4: modelli e lettere */
   if(act==='generaMora'){ apriGeneraMora(); return; }
   if(act==='eseguiGeneraMora'){ eseguiGeneraMora(t); return; }
@@ -2079,10 +2609,10 @@ document.addEventListener('click', e=>{
   if(act==='scaricaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(m) salvaFile(m.fileName, new Blob([m.buf])); return; }
   if(act==='segnapostoModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(!m) return;
     segnapostoDelModello(m.buf).then(l=>{ const el=$('#ph-'+m.id); if(el) el.innerHTML='Segnaposto trovati: '+(l.length?l.map(x=>'<code>'+esc(x)+'</code>').join(' '):'nessuno'); })
-      .catch(err=>alert(err.message)); return; }
+      .catch(err=>avviso(err.message)); return; }
   if(act==='eliminaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(!m) return;
-    if(!confirm('Eliminare il modello «'+m.nome+'» dal gestionale?'+(m.origine==='cartella'?'\n(Il file resta nella cartella '+CARTELLA_MODELLI+': per eliminarlo del tutto toglierlo anche da lì.)':''))) return;
-    (async()=>{ if(m.origine==='cartella'){ m.nascosto=true; m.buf=null; await idbModello('put', m); }
+    (async()=>{ if(!(await conferma('Eliminare il modello «'+m.nome+'» dal gestionale?'+(m.origine==='cartella'?'\n(Il file resta nella cartella '+CARTELLA_MODELLI+': per eliminarlo del tutto toglierlo anche da lì.)':''),{ok:'Elimina',pericolo:true}))) return;
+      if(m.origine==='cartella'){ m.nascosto=true; m.buf=null; await idbModello('put', m); }
       else { modelli=modelli.filter(x=>x!==m); await idbModello('del', m.id); }
       renderModelli(); toast('Modello eliminato'); })(); return; }
 
@@ -2106,8 +2636,10 @@ document.addEventListener('click', e=>{
     p.eventi.push({data:d, testo:txt}); save(); renderDetail(); return; }
   if(act==='delEvento'){ const p=getPos(openId); if(!p) return;
     const e=p.eventi[+t.dataset.i]; if(!e) return;
-    if(!confirm('Eliminare l\'evento del '+fmtData(e.data)+'?\n«'+e.testo+'»')) return;
-    p.eventi.splice(+t.dataset.i,1); save(); renderDetail(); return; }
+    conferma('Eliminare l\'evento del '+fmtData(e.data)+'?\n«'+e.testo+'»', {ok:'Elimina', pericolo:true}).then(ok=>{
+      if(!ok) return; const i=p.eventi.indexOf(e); if(i<0) return;
+      p.eventi.splice(i,1); save(); renderDetail(); });
+    return; }
   if(act==='addFattura'){ const p=getPos(openId); if(!p) return;
     const imp=num(p.importo);
     p.fatture.push(nuovaFattura());
@@ -2117,10 +2649,10 @@ document.addEventListener('click', e=>{
     return; }
   if(act==='delFattura'){ const p=getPos(openId); if(!p) return;
     const f=p.fatture.find(x=>x.id===t.dataset.id); if(!f) return;
-    if((f.numero||num(f.importo)) && !confirm('Eliminare la fattura '+(f.numero||'senza numero')+' ('+fmtEuro(f.importo)+')?')) return;
-    p.fatture=p.fatture.filter(x=>x.id!==f.id);
-    if(!p.fatture.length) p.importo='';
-    save(); renderAll(); return; }
+    const via=()=>{ p.fatture=p.fatture.filter(x=>x.id!==f.id); if(!p.fatture.length) p.importo=''; save(); renderAll(); };
+    if(f.numero||num(f.importo)) conferma('Eliminare la fattura '+(f.numero||'senza numero')+' ('+fmtEuro(f.importo)+')?', {ok:'Elimina', pericolo:true}).then(ok=>{ if(ok) via(); });
+    else via();
+    return; }
   if(act==='ricalcolaMora'){ const p=getPos(openId); if(!p) return;
     p.fasi.mora.termine_data=termineMoraCalcolato(p); p.fasi.mora.termine_manuale=false;
     save(); renderAll(); return; }
@@ -2128,6 +2660,17 @@ document.addEventListener('click', e=>{
   if(act==='apriCartella'){ apriCartella(); return; }
   if(act==='copiaCartella'){ copiaCartella(); return; }
   if(act==='tab'){ setView(t.dataset.tab); return; }
+  if(act==='postaAggiorna'){ postaAggiorna(); return; }
+  if(act && act.indexOf('posta')===0 && t.dataset.id){
+    const m=mailById(t.dataset.id); if(!m) return;
+    if(act==='postaApri'){ posta.aperta = posta.aperta===m.id ? null : m.id; renderPosta(); return; }
+    if(act==='postaTesto'){ posta.testo[m.id]=!posta.testo[m.id]; renderPosta(); return; }
+    if(act==='postaAnalizza'){ analizzaConClaude(m); return; }
+    if(act==='postaCrea'){ creaDaMail(m); return; }
+    if(act==='postaRegistra'){ registraSuPosizione(m); return; }
+    if(act==='postaIgnora'){ ignoraMail(m); return; }
+    if(act==='postaRipristina'){ ripristinaMail(m); return; }
+  }
   if(act==='nuovaCom'){ setView('comunicazioni'); resetComForm(); if(filtriCom.pos) $('#comPos').value=filtriCom.pos; $('#comNota').focus(); return; }
   if(act==='salvaCom'){ salvaCom(); return; }
   if(act==='annullaCom'){ resetComForm(); return; }
@@ -2147,12 +2690,15 @@ document.addEventListener('click', e=>{
     const n=db.posizioni.filter(p=>p.codice==='CA-ES000').length;
     db.posizioni=db.posizioni.filter(p=>p.codice!=='CA-ES000');
     if(n){ save(); renderAll(); toast('Posizione esempio eliminata'); }
-    else alert('Nessuna posizione esempio presente.'); return; }
+    else avviso('Nessuna posizione esempio presente.'); return; }
   if(act==='reset'){ $('#menu').classList.add('hidden');
-    if(!confirm('Azzerare tutto il registro? L\'operazione è irreversibile.\n(Suggerimento: prima usa «Esporta JSON» per un backup.)')) return;
-    if(!confirm('Sicuro? Verranno eliminate TUTTE le posizioni.')) return;
-    db={versione:1, aggiornato:Date.now(), posizioni:[], comunicazioni:[]};
-    save(); closePanel(); renderAll(); toast('Registro azzerato'); return; }
+    (async()=>{
+      if(!(await conferma('Azzerare tutto il registro? L\'operazione è irreversibile.\n(Suggerimento: prima usa «Esporta JSON» per un backup.)', {ok:'Continua', pericolo:true}))) return;
+      if(!(await conferma('Sicuro? Verranno eliminate TUTTE le posizioni.', {ok:'Azzera il registro', pericolo:true}))) return;
+      db={versione:2, aggiornato:Date.now(), posizioni:[], comunicazioni:[], posta:{smistati:{}}};
+      save(); closePanel(); renderAll(); toast('Registro azzerato');
+    })();
+    return; }
 });
 
 document.addEventListener('input', e=>{
@@ -2161,6 +2707,14 @@ document.addEventListener('input', e=>{
   if(el.id==='searchCom'){ filtriCom.q=el.value; renderCom(); return; }
   if(el.id==='statoFilter'){ filtri.stato=el.value; renderChips(); renderTable(); return; }
   if(el.dataset && el.dataset.act==='tipoModello'){ const m=(modelli||[]).find(x=>x.id===el.dataset.id); if(m){ m.tipo=el.value; idbModello('put',m).then(renderModelli); } return; }
+  if(el.id==='postaMostraSmistate'){ renderPosta(); return; }
+  if(el.dataset && el.dataset.pf){
+    const [id,k]=el.dataset.pf.split('|'), m=mailById(id); if(!m) return;
+    const f=formMail(m);
+    f[k] = el.type==='checkbox' ? el.checked : (el.type==='number' ? (el.value===''?'':+el.value) : el.value);
+    if(k==='posizione'){ f.come=''; renderPosta(); }
+    return;
+  }
   if(!el.dataset || !el.dataset.path) return;
   const p=getPos(openId); if(!p) return;
   let v;
@@ -2188,7 +2742,7 @@ document.addEventListener('input', e=>{
 });
 
 $('#overlay').addEventListener('click', closePanel);
-document.addEventListener('keydown', e=>{ if(e.key!=='Escape') return;
+document.addEventListener('keydown', e=>{ if(e.key!=='Escape' || document.querySelector('.dlg-bg')) return;
   if(!$('#modal').classList.contains('hidden')){ chiudiModal(); return; }
   if(!$('#popNote').classList.contains('hidden')){ chiudiPopNote(); return; }
   closePanel(); });
@@ -2197,14 +2751,13 @@ $('#modFile').addEventListener('change', e=>{ const fs=Array.from(e.target.files
 $('#importFile').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{
-    try{
-      const d=normalizza(JSON.parse(r.result));
-      if(!d) throw new Error('struttura non valida');
-      if(!confirm('Importare il file e sostituire il registro attuale?\n('+d.posizioni.length+' posizioni, '+d.comunicazioni.length+' comunicazioni)')) return;
-      db=d; save(); closePanel(); renderAll(); resetComForm(); toast('Registro importato');
-    }catch(err){ alert('File non valido: '+err.message); }
+  r.onload=async()=>{
     e.target.value='';
+    let d;
+    try{ d=normalizza(JSON.parse(r.result)); if(!d) throw new Error('struttura non valida'); }
+    catch(err){ avviso('File non valido: '+err.message); return; }
+    if(!(await conferma('Importare il file e sostituire il registro attuale?\n('+d.posizioni.length+' posizioni, '+d.comunicazioni.length+' comunicazioni)', {ok:'Importa'}))) return;
+    db=d; save(); closePanel(); renderAll(); resetComForm(); toast('Registro importato');
   };
   r.readAsText(f);
 });
