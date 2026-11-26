@@ -2775,8 +2775,9 @@ async function scandisci(dh, pref, out, prof){
   for await (const [nome,h] of dh.entries()){
     if(/^~\$|^\.|^thumbs\.db$|^desktop\.ini$/i.test(nome)) continue;
     const rel=pref?pref+'/'+nome:nome;
-    if(h.kind==='directory'){ if(prof<5) await scandisci(h, rel, out, prof+1); }
-    else { try{ const f=await h.getFile(); out.push({rel, nome, h, f, size:f.size, mod:f.lastModified}); }catch(e){} }
+    if(h.kind==='directory'){ if(prof<5){ try{ await scandisci(h, rel, out, prof+1); }catch(e){ out.push({rel:rel+'/', nome, h, f:null, size:0, mod:0, err:(e&&e.name)||'errore', cartella:true}); } } }
+    else { try{ const f=await h.getFile(); out.push({rel, nome, h, f, size:f.size, mod:f.lastModified}); }
+      catch(e){ out.push({rel, nome, h, f:null, size:0, mod:0, err:(e&&e.name)||'errore'}); } } // es. percorso oltre i 260 caratteri di Windows
   }
   return out;
 }
@@ -3011,7 +3012,12 @@ async function aggiornaPratica(p, c){
   const percorso=percorsoCartella(c);
   if(p.cartella!==percorso){ rep.fatti.push('Cartella collegata: '+c.rel+(p.cartella?' (prima: '+p.cartella+')':'')); p.cartella=percorso; }
   if(c.categoria) rep.verifiche.push('La cartella è nel raggruppamento '+c.categoria+': controllare fase e stato della posizione');
-  const files=await scandisci(c.h,'',[],0);
+  const tutti=await scandisci(c.h,'',[],0);
+  const files=tutti.filter(x=>!x.err), illeggibili=tutti.filter(x=>x.err);
+  illeggibili.forEach(x=>{ const lung=(percorso+'\\'+x.rel.replace(/\//g,'\\')).length;
+    rep.errori.push(x.rel.replace(/\//g,' › ')+': '+(lung>259
+      ? 'non si può aprire perché il percorso completo è lungo '+lung+' caratteri e Windows ne gestisce al massimo 259. Accorcia il nome del file (es. «Mail CA - Nuova pratica.msg») e premi di nuovo Aggiorna.'
+      : 'non si può aprire ('+x.err+'): forse è aperto in un altro programma o non è ancora scaricato.')); });
   const indice=p.cartellaIndice||{};
   files.forEach(x=>{ if(!(x.rel in indice)) rep.nuovi.push(x); else if(indice[x.rel]!==x.mod) rep.modificati.push(x); });
   const daLeggere=new Set(rep.nuovi.concat(rep.modificati).map(x=>x.rel));
@@ -3045,7 +3051,15 @@ async function aggiornaPratica(p, c){
       }
       rep.ecMail=prima.m.allegati.filter(a=>/\.xlsx$/i.test(a.nome) && RE_EC_NOME.test(a.nome));
     } else if(!prima && !p.datiCA){
-      rep.verifiche.push('Nessuna mail di CA con i dati della pratica in '+SOTTO_MAIL);
+      const bloccata=illeggibili.find(x=>/\.(msg|eml)$/i.test(x.nome) && (inMail(x) || x.rel.indexOf('/')<0) && /nuova\s+pratica|codic[ei]\s+client/i.test(x.nome));
+      if(bloccata){
+        // si usano almeno i codici cliente scritti nel nome del file (Outlook mette «_» al posto di «:» e «/»)
+        const ogg=bloccata.nome.replace(/\.(msg|eml)$/i,'').replace(/(Client[ei])_\s/i,'$1: ').replace(/\s_\s/g,' / ');
+        const cod=[]; let mm; const re=/(?:^|[:\/]\s*)([A-Z]*\d[A-Z0-9]*)\s+-\s/gi; while((mm=re.exec(ogg))) cod.push(mm[1]);
+        const nuovi=cod.filter(k=>String(p.debitore.codici||'').toUpperCase().indexOf(k.toUpperCase())<0);
+        if(nuovi.length){ p.debitore.codici=[p.debitore.codici].concat(nuovi).filter(Boolean).join(' / '); rep.fatti.push('Codici cliente (dal nome del file della mail): '+nuovi.join(' / ')); }
+        rep.verifiche.push('La mail di CA c\'è ma non si può aprire (nome del file troppo lungo): l\'anagrafica verrà compilata dopo aver accorciato il nome del file');
+      } else rep.verifiche.push('Nessuna mail di CA con i dati della pratica in '+SOTTO_MAIL);
     }
   }
   /* 2) estratti conto: per ogni codice cliente il più recente */
