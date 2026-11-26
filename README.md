@@ -53,7 +53,7 @@ Aprire con **Chrome o Edge** (doppio clic sul file).
 gestionale_recupero_crediti.html   # applicazione (single file: HTML + CSS + JS)
 skills/pratica-recupero-crediti/   # skill di Claude: apertura pratica dalla mail e lettera di messa in mora
   SKILL.md
-  scripts/mail_ca.py               # parser delle mail di nuovo incarico (Gmail/.eml/.msg), esclude le conferme di lettura
+  scripts/mail_ca.py               # parser delle mail di nuovo incarico (Gmail/.eml/.msg), esclude conferme di lettura e ricevute PEC
   scripts/estrai_pratica.py        # crea la cartella pratica, verifica l'importo sugli estratti conto
   scripts/genera_mora.py           # compila la lettera e aggiorna gestionale_ca.json
   test/                            # test del parser con mail anonimizzate

@@ -53,6 +53,39 @@ def is_conferma_lettura(oggetto, corpo=""):
     return False
 
 
+
+# Ricevute PEC (accettazione, consegna, mancata consegna...): non sono pratiche.
+# Attenzione: «POSTA CERTIFICATA: ...» e' il messaggio PEC vero e proprio e NON va scartato.
+_RICEVUTA_PEC = (r"(?:ACCETTAZIONE|AVVENUTA\s+CONSEGNA|CONSEGNA|PRESA\s+IN\s+CARICO|"
+                 r"(?:PRE)?AVVISO\s+DI\s+(?:NON\s+ACCETTAZIONE|MANCATA\s+CONSEGNA|RILEVAZIONE\s+VIRUS)|"
+                 r"ERRORE\s+DI\s+CONSEGNA|MANCATA\s+CONSEGNA|NON\s+ACCETTAZIONE|"
+                 r"RICEVUTA\s+DI\s+(?:ACCETTAZIONE|(?:AVVENUTA\s+)?CONSEGNA))\s*:")
+RE_PEC_OGGETTO = re.compile(r"^\s*" + _PREFISSI + _RICEVUTA_PEC, re.IGNORECASE)
+RE_PEC_CORPO = re.compile(
+    r"(?:Oggetto|Subject)\s*:\s*\**\s*" + _PREFISSI + _RICEVUTA_PEC
+    + r"|\bRicevuta di (?:accettazione|avvenuta consegna|presa in carico|mancata consegna)\b"
+    r"|\bil messaggio\b.{0,200}\b(?:è stato accettato dal sistema|è stato consegnato nella casella)",
+    re.IGNORECASE | re.DOTALL)
+
+
+def is_ricevuta_pec(oggetto, corpo=""):
+    """True se la mail e' solo una ricevuta PEC (accettazione / consegna / mancata consegna)."""
+    if RE_PEC_OGGETTO.match(oggetto or ""):
+        return True
+    c = corpo or ""
+    if len(c) < 3000 and not re.search(r"Ragione Sociale|Importo (?:Totale )?Scaduto", c, re.I):
+        return bool(RE_PEC_CORPO.search(c))
+    return False
+
+
+def motivo_scarto(oggetto, corpo=""):
+    """Perche' la mail non e' una pratica (None se va letta): conferma di lettura o ricevuta PEC."""
+    if is_conferma_lettura(oggetto, corpo):
+        return "conferma di lettura"
+    if is_ricevuta_pec(oggetto, corpo):
+        return "ricevuta PEC (accettazione/consegna)"
+    return None
+
 # ------------------------------------------------------------ normalizzazione del testo
 def normalizza(corpo):
     """Testo pulito, una voce per riga: toglie grassetti, immagini e link, unisce le righe
@@ -162,9 +195,11 @@ def parse_mail(oggetto, corpo, data_mail=""):
     t = normalizza(corpo)
     ogg = oggetto_originale(t, oggetto)
     verifiche = []
-    d = {"oggetto_mail": ogg, "conferma_lettura": is_conferma_lettura(oggetto, corpo)}
-    if d["conferma_lettura"]:
-        d["verifiche"] = ["mail di sola conferma di lettura: nessuna pratica da aprire"]
+    scarto = motivo_scarto(oggetto, corpo)
+    d = {"oggetto_mail": ogg, "conferma_lettura": scarto == "conferma di lettura",
+         "ricevuta_pec": bool(scarto) and scarto != "conferma di lettura", "scarto": scarto}
+    if scarto:
+        d["verifiche"] = [f"mail di sola {scarto}: nessuna pratica da aprire"]
         return d
 
     d["data_mail"] = data_inoltro(t) or data_mail or ""
@@ -305,7 +340,8 @@ def parse_mail(oggetto, corpo, data_mail=""):
 
 def main(argv):
     if len(argv) >= 2 and argv[0] == "--conferma":
-        print("CONFERMA DI LETTURA" if is_conferma_lettura(argv[1]) else "mail normale")
+        m = motivo_scarto(argv[1])
+        print(f"DA SCARTARE: {m}" if m else "mail normale")
         return
     if not argv:
         print(__doc__)

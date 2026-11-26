@@ -15,9 +15,9 @@ Output, tutto nella cartella `L:\PROGETTI\COMOACQUA\ARTIFACT\<DEBITORE>\`:
 ## 0. Mail da Gmail: leggere TUTTA la mail, scartare le conferme di lettura
 
 1. Cerca le nuove pratiche **escludendo le conferme di lettura**:
-   `("Nuova pratica" OR "NUOVA PRATICA") -subject:Letto -subject:"Read:"`
+   `("Nuova pratica" OR "NUOVA PRATICA") -subject:Letto -subject:"Read:" -subject:ACCETTAZIONE -subject:CONSEGNA`
    Prima di aprire ogni risultato controlla l'oggetto con `py scripts\mail_ca.py --conferma "<oggetto>"`:
-   le mail «I: Letto: …», «Read: …», «Notifica di lettura» **non sono pratiche** e non vanno mostrate né elaborate.
+   le mail «I: Letto: …», «Read: …», «Notifica di lettura» e le **ricevute PEC** («ACCETTAZIONE: …», «AVVENUTA CONSEGNA: …», «AVVISO DI MANCATA CONSEGNA: …») **non sono pratiche** e non vanno mostrate né elaborate. Il messaggio «POSTA CERTIFICATA: …» invece è la PEC vera e va letto.
 2. Apri il messaggio completo (`get_message`, non lo snippet) e salva il **corpo testuale integrale** in
    `ARTIFACT\<DEBITORE>\mail.txt` (senza tagliare: le mail multi-posizione hanno un blocco «Dettaglio Posizione N» per ogni utenza).
 3. Scarica gli allegati (estratti conto `.xlsx`, PDR, rate) nella stessa cartella.
@@ -42,7 +42,7 @@ Test del parser (dati anonimizzati): `py -m unittest discover -s test`.
 py "L:\PROGETTI\COMOACQUA\.claude\skills\pratica-recupero-crediti\scripts\estrai_pratica.py" "<percorso .msg>"
 ```
 (per `.msg` usa Outlook via COM: richiede Outlook configurato su questo PC; un `.eml` si legge senza Outlook; testo da Gmail: vedi §0. `PYTHONIOENCODING=utf-8`).
-Se la mail è solo una conferma di lettura lo script esce con «SCARTATA».
+Se la mail è solo una conferma di lettura o una ricevuta PEC lo script esce con «SCARTATA».
 
 Lo script:
 - crea la cartella in `ARTIFACT\<DEBITORE>` e vi salva gli allegati (salta `.png`/`.jpg` logo e social);

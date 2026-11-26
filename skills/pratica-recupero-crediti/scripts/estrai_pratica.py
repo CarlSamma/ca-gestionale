@@ -12,7 +12,8 @@ Uso:
 La mail viene letta per intero da mail_ca.py: piu' posizioni (codici cliente)
 nella stessa mail, indirizzo della sede distinto da quello di fornitura,
 societa' in liquidazione, P.IVA cessata, piano di rientro o fatture insolute.
-Le mail di sola conferma di lettura («Letto: ...») vengono scartate.
+Le mail di sola conferma di lettura («Letto: ...») e le ricevute PEC
+(accettazione/consegna) vengono scartate.
 
 Crea/usa la cartella L:\\PROGETTI\\COMOACQUA\\ARTIFACT\\<DEBITORE>,
 - salva gli allegati della mail (tranne le immagini/logo/social),
@@ -224,10 +225,10 @@ def main():
 
     # --- 2. lettura completa ----------------------------------------------
     dati = parse_mail(subject, body, data_mail)
-    if dati.get("conferma_lettura"):
+    if dati.get("scarto"):
         if msg is not None:
             msg.Close(0)
-        sys.exit("SCARTATA: e' solo una conferma di lettura («Letto: ...»), non una nuova pratica.")
+        sys.exit(f"SCARTATA: e' solo una {dati['scarto']}, non una nuova pratica.")
     if not dati.get("debitore"):
         sys.exit("ERRORE: ragione sociale del debitore non trovata nella mail.")
     verifiche = list(dati.get("verifiche", []))

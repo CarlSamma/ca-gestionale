@@ -7,11 +7,36 @@ from pathlib import Path
 
 QUI = Path(__file__).resolve().parent
 sys.path.insert(0, str(QUI.parent / "scripts"))
-from mail_ca import is_conferma_lettura, parse_mail  # noqa: E402
+from mail_ca import is_conferma_lettura, is_ricevuta_pec, motivo_scarto, parse_mail  # noqa: E402
 
 
 def leggi(nome):
     return (QUI / "mail" / nome).read_text(encoding="utf-8")
+
+
+
+class RicevutePec(unittest.TestCase):
+    def test_oggetti(self):
+        si = ["ACCETTAZIONE: Messa in mora - X", "AVVENUTA CONSEGNA: Messa in mora - X", "CONSEGNA: x",
+              "I: ACCETTAZIONE: x", "AVVISO DI MANCATA CONSEGNA: x", "PREAVVISO DI MANCATA CONSEGNA: x",
+              "AVVISO DI NON ACCETTAZIONE: x", "PRESA IN CARICO: x", "ERRORE DI CONSEGNA: x"]
+        no = ["POSTA CERTIFICATA: I: Codice Cliente: C1 - X – Nuova pratica", "I: Codice Cliente: C1 - X – Nuova pratica",
+              "Consegna documenti pratica", "I: NUOVA PRATICA - CONSEGNE RAPIDE SRL"]
+        for o in si:
+            self.assertTrue(is_ricevuta_pec(o), o)
+            self.assertEqual(motivo_scarto(o), "ricevuta PEC (accettazione/consegna)")
+        for o in no:
+            self.assertFalse(is_ricevuta_pec(o), o)
+            self.assertIsNone(motivo_scarto(o), o)
+
+    def test_corpo(self):
+        corpo = ("Ricevuta di avvenuta consegna\nIl giorno 20/11/2026 alle ore 10:12:01 (+0100) il messaggio "
+                 "\"Messa in mora\" proveniente da \"a@pec.example.it\" ed indirizzato a \"b@pec.example.it\" "
+                 "è stato consegnato nella casella di destinazione.")
+        self.assertTrue(is_ricevuta_pec("I: pratica", corpo))
+        self.assertFalse(is_ricevuta_pec("I: pratica", leggi("multi_liquidazione.txt")))
+        d = parse_mail("I: pratica", corpo)
+        self.assertTrue(d["ricevuta_pec"])
 
 
 class ConfermeLettura(unittest.TestCase):
