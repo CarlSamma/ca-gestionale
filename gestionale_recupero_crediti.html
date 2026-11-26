@@ -2933,7 +2933,8 @@ function datiMailCA(oggetto, corpo){
   if(statoPiva && statoPiva!=='ATTIVA') verifiche.push('Partita IVA indicata come '+statoPiva);
   if(statiUtenza.some(s=>/CESSAT/i.test(s))) verifiche.push('Utenza cessata: '+statiUtenza.filter(s=>/CESSAT/i.test(s)).join('; '));
   if(!pec) verifiche.push('PEC del debitore non indicata nella mail');
-  return {nome, forma:formaDaNome(nome), via, cap, comune, pec, piva, statoPiva, codici, contratti, tipologia, statiUtenza,
+  const forma=formaDaNome(nome) || (/ditta\s+individuale/i.test(t)?'Ditta individuale':'');
+  return {nome, forma, via, cap, comune, pec, piva, statoPiva, codici, contratti, tipologia, statiUtenza,
     importo, posizioni:imp.posizioni, verifiche};
 }
 function eRicevutaFile(nome, oggetto){
@@ -3095,6 +3096,9 @@ async function aggiornaPratica(p, c){
         rep.verifiche.push('IMPORTO TOTALE SCADUTO DA VERIFICARE: la mail di CA indica '+fmtEuro(tot)+', l\'estratto conto al '+fmtData(sit)+' '+fmtEuro(scad));
     }
   }
+  /* 3a) PEC non consegnate: avviso di mancata consegna nuovo */
+  files.filter(x=>inMail(x) && /\.eml$/i.test(x.nome) && /MANCATA\s+CONSEGNA|NON\s+ACCETTAZIONE|ERRORE\s+DI\s+CONSEGNA/i.test(x.nome) && daLeggere.has(x.rel))
+    .forEach(x=>rep.verifiche.push('PEC NON CONSEGNATA: «'+x.nome.replace(/\.eml$/i,'')+'» — verificare l\'indirizzo PEC e reinviare'));
   /* 3) ricevute di consegna PEC nuove: possibile data di invio della messa in mora (la più recente) */
   if(p.fase===1 && !p.fasi.mora.data){
     let ult=null;
