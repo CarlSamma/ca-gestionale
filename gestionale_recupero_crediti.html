@@ -2384,9 +2384,26 @@ async function idbTutti(){ const d=await idb(); return new Promise((res,rej)=>{ 
 async function idbModello(op, v){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction('modelli','readwrite');
   const st=t.objectStore('modelli'); op==='del'?st.delete(v):st.put(v); t.oncomplete=()=>res(true); t.onerror=()=>rej(t.error); }); }
 async function leggiModelliIdb(){ if(modelli) return; try{ modelli=await idbTutti(); }catch(e){ modelli=[]; } }
+/* modello predefinito della lettera di messa in mora: quello della skill pratica-recupero-crediti
+   (L:\\PROGETTI\\COMOACQUA\\.claude\\skills\\pratica-recupero-crediti\\template). Nella versione online è pubblicato
+   accanto alla pagina; sul PC si legge dalla cartella #MODELLI# dove ne è stata messa una copia. */
+const MODELLO_PREDEFINITO={fileName:'modello_messa_in_mora.docx', url:'modelli/modello_messa_in_mora.docx', nome:'Messa in mora — modello della skill'};
+function ePredefinito(m){ return m && m.fileName===MODELLO_PREDEFINITO.fileName; }
+async function caricaPredefinito(){
+  if(modelli.some(ePredefinito)) return;            // già presente (anche se eliminato dall'utente: resta nascosto)
+  if(location.protocol==='file:') return;          // sul PC arriva dalla cartella #MODELLI#
+  try{
+    const r=await fetch(MODELLO_PREDEFINITO.url); if(!r.ok) return;
+    const buf=await r.arrayBuffer(); zipLeggi(buf);
+    const rec={id:uid(), nome:MODELLO_PREDEFINITO.nome, tipo:'mora', fileName:MODELLO_PREDEFINITO.fileName, size:buf.byteLength,
+      lastModified:0, aggiunto:oggi(), origine:'predefinito', nascosto:false, buf};
+    modelli.push(rec); await idbModello('put', rec);
+  }catch(e){}
+}
 async function caricaModelli(){
   await leggiModelliIdb();
   await sincronizzaModelli(true);
+  await caricaPredefinito();
   renderModelli();
 }
 async function cartellaModelli(crea){
@@ -2446,7 +2463,7 @@ function renderModelli(){
     const l2=vis.filter(m=>m.tipo===k); if(!l2.length) return '';
     return '<div class="mod-grp">'+esc(l)+'</div>'+l2.map(m=>
       '<div class="mod-item"><span class="ico">📄</span><div><div class="nm">'+esc(m.nome)+'</div>'+
-      '<div class="meta">'+esc(m.fileName)+' · '+Math.round((m.size||0)/1024)+' KB · '+(m.origine==='cartella'?'cartella '+CARTELLA_MODELLI:'solo nel browser')+
+      '<div class="meta">'+esc(m.fileName)+' · '+Math.round((m.size||0)/1024)+' KB · '+(ePredefinito(m)?'⭐ predefinito · ':'')+(m.origine==='cartella'?'cartella '+CARTELLA_MODELLI:(m.origine==='predefinito'?'modello della skill':'solo nel browser'))+
       ' · aggiunto il '+fmtData(m.aggiunto)+'</div><div class="meta ph" id="ph-'+m.id+'"></div></div>'+
       '<div class="acts"><select data-act="tipoModello" data-id="'+m.id+'">'+TIPI_MODELLO.map(t=>'<option value="'+t[0]+'"'+(t[0]===m.tipo?' selected':'')+'>'+esc(t[1])+'</option>').join('')+'</select>'+
       '<button data-act="segnapostoModello" data-id="'+m.id+'">🔤 Segnaposto</button>'+
@@ -2503,7 +2520,7 @@ function verificheLettera(p, v){
 function campoM(id,label,val,extra){ return '<label class="field"><span>'+esc(label)+'</span><input id="'+id+'" value="'+esc(val)+'" '+(extra||'')+'></label>'; }
 function apriGeneraMora(){
   const p=getPos(openId); if(!p) return;
-  const mm=modelliVisibili().filter(m=>m.tipo==='mora');
+  const mm=modelliVisibili().filter(m=>m.tipo==='mora').sort((a,b)=>(ePredefinito(b)?1:0)-(ePredefinito(a)?1:0));
   const v=valoriLettera(p);
   let body;
   if(!mm.length){
@@ -2612,7 +2629,7 @@ document.addEventListener('click', e=>{
       .catch(err=>avviso(err.message)); return; }
   if(act==='eliminaModello'){ const m=(modelli||[]).find(x=>x.id===t.dataset.id); if(!m) return;
     (async()=>{ if(!(await conferma('Eliminare il modello «'+m.nome+'» dal gestionale?'+(m.origine==='cartella'?'\n(Il file resta nella cartella '+CARTELLA_MODELLI+': per eliminarlo del tutto toglierlo anche da lì.)':''),{ok:'Elimina',pericolo:true}))) return;
-      if(m.origine==='cartella'){ m.nascosto=true; m.buf=null; await idbModello('put', m); }
+      if(m.origine==='cartella' || m.origine==='predefinito'){ m.nascosto=true; m.buf=null; await idbModello('put', m); }
       else { modelli=modelli.filter(x=>x!==m); await idbModello('del', m.id); }
       renderModelli(); toast('Modello eliminato'); })(); return; }
 
