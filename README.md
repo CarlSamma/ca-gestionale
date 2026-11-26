@@ -31,9 +31,12 @@ Aprire con **Chrome o Edge** (doppio clic sul file).
 
 - **Registro posizioni**: dashboard (posizioni attive, importo esposto, scadenze superate, entro 7 giorni, pronte per il ricorso, prossima scadenza), ricerca (anche per numero di fattura), filtri per fase e stato con conteggi coerenti, ordinamento, scadenze evidenziate in rosso/ambra.
 - **Fatture e titolo del credito**: elenco fatture (numero, data, scadenza, importo, pagato) con totale, pagato e **residuo dovuto calcolato**; riconoscimento di debito (sì/no, data, forma). È la prova scritta mostrata nella fase del ricorso. Senza fatture si può ancora indicare un importo a mano.
-- **Scheda posizione**: barra di avanzamento a 6 fasi, anagrafica debitore (forma giuridica a scelta: S.r.l., S.r.l.s., S.a.s., Ditta individuale, S.p.A., S.n.c., Soc. coop., S.S.D., Persona fisica), promemoria, storico eventi (eliminazione con conferma), note, apertura della cartella pratica, pulsante *Registra fase e passa alla successiva* (alla fase 6 chiude la procedura).
+- **Scheda posizione**: barra di avanzamento a 6 fasi, anagrafica debitore con indirizzo della sede in via/CAP/comune (dalla v1.4; i dati precedenti vengono divisi automaticamente) (forma giuridica a scelta: S.r.l., S.r.l.s., S.a.s., Ditta individuale, S.p.A., S.n.c., Soc. coop., S.S.D., Persona fisica), promemoria, storico eventi (eliminazione con conferma), note, apertura della cartella pratica, pulsante *Registra fase e passa alla successiva* (alla fase 6 chiude la procedura).
 - **Stati**: attiva / sospesa / chiusa-incassata / chiusa-abbandonata.
 - **Comunicazioni**: note sulle comunicazioni con la cliente CA o con la controparte; dalla scheda posizione si aprono **solo** le comunicazioni collegate a quella posizione.
+- **Colonna Note** nel registro (v1.4): note manuali per posizione, ciascuna con data facoltativa; con *avvisami alla data* la nota diventa una scadenza (dashboard, colore, pannello «📌 Note con data») finché non viene segnata come fatta. La ricerca trova anche il testo delle note.
+- **📄 Modelli** (v1.4): area per i modelli Word `.docx` (messa in mora, ricorso 633 c.p.c., altro). I modelli restano nel browser e, con la cartella collegata, nella sottocartella `#MODELLI#` (i `.docx` copiati lì a mano vengono importati da soli). Per ogni modello si vedono i segnaposto riconosciuti.
+- **Genera lettera di messa in mora** (v1.4): dalla fase *Messa in mora* della scheda; compila il modello con data, debitore, PEC, indirizzo (via, CAP, comune), importo e causa (piano di rientro non rispettato / fatture insolute). Le spese legali vuote restano `[……..]` evidenziate in giallo. Alla fine mostra i punti da verificare (società in liquidazione, S.n.c./S.a.s., PEC o indirizzo mancanti) e registra l'evento.
 - **Stampa** del registro.
 - **Codici posizione** `CA-AAAA-NNN` progressivi senza duplicati anche dopo eliminazioni.
 
@@ -48,8 +51,16 @@ Aprire con **Chrome o Edge** (doppio clic sul file).
 
 ```
 gestionale_recupero_crediti.html   # applicazione (single file: HTML + CSS + JS)
+skills/pratica-recupero-crediti/   # skill di Claude: apertura pratica dalla mail e lettera di messa in mora
+  SKILL.md
+  scripts/mail_ca.py               # parser delle mail di nuovo incarico (Gmail/.eml/.msg), esclude le conferme di lettura
+  scripts/estrai_pratica.py        # crea la cartella pratica, verifica l'importo sugli estratti conto
+  scripts/genera_mora.py           # compila la lettera e aggiorna gestionale_ca.json
+  test/                            # test del parser con mail anonimizzate
 README.md
 ```
+
+I modelli Word dello Studio e i dati reali (`gestionale_ca*.json`, mail, estratti conto) **non** sono nel repository.
 
 ## Avvertenza
 

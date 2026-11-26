@@ -1,0 +1,23 @@
+*Da:* Ufficio Incassi <incassi@example.it>
+*Inviato:* mercoledì 18 novembre 2026 14:59
+*Oggetto:* Codice Cliente: C111 - BETA MECCANICA S.R.L.S. – Nuova pratica –
+Utenza Industriale – PDR non rispettato e contratto attivo
+
+Gentile Avvocato,
+
+Nel caso specifico, la morosità riguarda un'*UTENZA INDUSTRIALE *e deriva
+da un Piano di Rientro (PDR) sottoscritto dalla parte debitrice e
+successivamente non rispettato.
+
+   - *Ragione Sociale Debitore:* BETA MECCANICA S.R.L.S.
+   - *Codice Cliente: *C111
+   - *Codice Contratto:* SE874
+   - *Tipologia Utenza:* Industriale
+   - *Indirizzo:* VIA MONTE BIANCO, 14 – 22079 – VILLA GUARDIA
+   - *Indirizzo Pec:* beta@pec.example.it
+   - *Partita IVA / Codice Fiscale:* 09876543210 - *ATTIVA*
+   - *Stato dell'Utenza:* *ATTIVA *dal 01/01/2024
+   - *Importo Totale Scaduto:* *€ 24.769,85*
+
+   - Copia del Piano di Rientro PDR24-001600 del 31/12/2024 firmato e
+   relativo piano di ammortamento delle rate
