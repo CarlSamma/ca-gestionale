@@ -380,7 +380,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.5.1</div>
     </div>
   </div>
   <div class="actions">
@@ -665,7 +665,7 @@ function nuovaFattura(){ return {id:uid(), numero:'', data:'', scadenza:'', impo
 function nuovaPosizione(){
   return {
     id: uid(), codice: codiceProssimo(), cliente:'CA',
-    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:'', codici:''},
+    debitore:{nome:'', forma:'', indirizzo:'', cap:'', sede:'', piva:'', pec:'', codici:'', contratti:'', tipologia:'', statoUtenza:'', statoPiva:''},
     importo:'', apertura: oggi(), fase:1, stato:'attiva',
     fatture:[], riconoscimento:{presente:false, data:'', nota:''},
     fasi:{
@@ -706,6 +706,11 @@ function migraPosizione(p){
   }
   if(!Array.isArray(p.annotazioni)) p.annotazioni=[];
   if(typeof p.attesa!=='string') p.attesa='';
+  if(p.datiCA){ const d=p.datiCA, dd=p.debitore; // v1.5.1: tipologia, contratti e stati letti dalla mail ora stanno in anagrafica
+    if(!dd.contratti && (d.contratti||[]).length) dd.contratti=d.contratti.join(' / ');
+    if(!dd.tipologia && d.tipologia) dd.tipologia=d.tipologia;
+    if(!dd.statoUtenza && (d.statiUtenza||[]).length) dd.statoUtenza=d.statiUtenza.join(' · ');
+    if(!dd.statoPiva && d.statoPiva) dd.statoPiva=d.statoPiva; }
   p.annotazioni.forEach(n=>{ if(!n.id) n.id=uid(); });
   return p;
 }
@@ -1236,11 +1241,15 @@ function smistata(m){
 /* ---------- modulo di smistamento ---------- */
 function formMail(m){
   if(posta.form[m.id]) return posta.form[m.id];
-  const a=m.a, ab=abbinaPosizione(a);
-  return posta.form[m.id] = { nome:a.nome, forma:normalizzaForma(a.nome.match(/\b(S\.?R\.?L\.?S|S\.?R\.?L|S\.?A\.?S|S\.?P\.?A|S\.?N\.?C)\.?\b/i)?.[0]||''),
-    codici:a.codici.join(' / '), piva:a.piva, pec:'', sede:'', importo:a.importo!=null?a.importo:'',
+  const a=m.a, d=datiMailCA(a.oggetto, a.corpo), ab=abbinaPosizione(Object.assign({}, a, {piva:d.piva||a.piva, codici:d.codici.length?d.codici:a.codici, nome:d.nome||a.nome}));
+  const nome=d.nome||a.nome;
+  return posta.form[m.id] = { nome, forma:d.forma||formaDaNome(nome),
+    codici:(d.codici.length?d.codici:a.codici).join(' / '), piva:d.piva||a.piva, pec:d.pec,
+    sede:d.via ? d.via+(d.cap||d.comune?', '+[d.cap,d.comune].filter(Boolean).join(' '):'') : '',
+    contratti:d.contratti.join(' / '), tipologia:d.tipologia, statoUtenza:d.statiUtenza.join(' · '), statoPiva:d.statoPiva,
+    importo:a.importo!=null?a.importo:(d.importo!=null?d.importo:''),
     posizione: ab.pos?ab.pos.id:'', come: ab.come, completa:true, fatture:[], usaFatture:true,
-    riconoscimento:null, sintesi:'', daVerificare:[], automatiche:(a.verifiche||[]).slice() };
+    riconoscimento:null, sintesi:'', daVerificare:[], automatiche:(a.verifiche||[]).concat(d.verifiche.filter(v=>(a.verifiche||[]).indexOf(v)<0)) };
 }
 function applicaAnalisi(m, r){
   const f=formMail(m), d=(r&&r.debitore)||{};
@@ -1314,7 +1323,9 @@ function completaPosizione(p, f){
     d.sedeDivisa=true; fatte.push('sede');
   }
   if(f.forma && !d.forma){ d.forma=normalizzaForma(f.forma); fatte.push('forma giuridica'); }
-  const nuovi=String(f.codici||'').split(/\s*\/\s*/).filter(Boolean).filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  se('contratti',f.contratti,'codici contratto'); se('tipologia',f.tipologia,'tipologia utenza');
+  se('statoUtenza',f.statoUtenza,'stato dell\'utenza'); se('statoPiva',f.statoPiva,'stato della P.IVA');
+  const nuovi=String(f.codici||'').split(/\s*\/\s*/).filter(Boolean).filter(c=>String(d.codici||'').toUpperCase().indexOf(c.toUpperCase())<0); // non le note: contengono l'oggetto della mail
   if(nuovi.length){ d.codici=[d.codici].concat(nuovi).filter(Boolean).join(' / '); fatte.push('codici cliente'); }
   if(f.usaFatture && f.fatture && f.fatture.length){
     const visti=new Set(p.fatture.map(x=>String(x.numero||'').replace(/\s/g,'').toLowerCase()));
@@ -1431,7 +1442,8 @@ function htmlMailDettaglio(m){
   }
   if(!sm){
     h+='<div class="grid mail-form">'+inp('nome','Debitore')+inp('forma','Forma giuridica')+inp('codici','Codici cliente CA')+
-      inp('piva','P.IVA / C.F.')+inp('pec','PEC')+inp('sede','Sede')+inp('importo','Importo scaduto indicato (€)','number')+
+      inp('piva','P.IVA / C.F.')+inp('pec','PEC')+inp('sede','Sede (via, CAP comune)')+inp('contratti','Codici contratto')+inp('tipologia','Tipologia utenza')+
+      inp('statoUtenza','Stato dell\'utenza')+inp('statoPiva','Stato della Partita IVA')+inp('importo','Importo scaduto indicato (€)','number')+
       '<label class="field"><span>Posizione nel gestionale'+(f.come?' <i>(trovata per '+esc(f.come)+')</i>':'')+'</span>'+
       '<select data-pf="'+esc(m.id)+'|posizione"><option value="">＋ Nuova posizione</option>'+
       db.posizioni.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===f.posizione?' selected':'')+'>'+esc(p.codice+' · '+(p.debitore.nome||''))+'</option>').join('')+
@@ -1547,7 +1559,7 @@ function posizioniVista(){
   const q=filtri.q.trim().toLowerCase();
   if(q) list=list.filter(p=>{
     const f=p.fasi||{};
-    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.debitore.codici,p.note,p.promemoria&&p.promemoria.testo,
+    return [p.codice,p.debitore.nome,p.debitore.sede,p.debitore.piva,p.debitore.codici,p.debitore.pec,p.debitore.contratti,p.note,p.promemoria&&p.promemoria.testo,
             f.ricorso&&f.ricorso.rg,f.decreto&&f.decreto.numero,f.esecuzione&&f.esecuzione.nota]
            .concat((p.fatture||[]).map(x=>x.numero))
            .concat((p.annotazioni||[]).map(x=>x.testo))
@@ -1790,6 +1802,10 @@ function renderDetail(){
       campo(p,'debitore.piva','P. IVA / C.F.')+
       campo(p,'debitore.pec','PEC')+
       campo(p,'debitore.codici','Codici cliente CA (es. C681 / 013206002719)')+
+      campo(p,'debitore.contratti','Codici contratto')+
+      campo(p,'debitore.tipologia','Tipologia utenza')+
+      campo(p,'debitore.statoUtenza','Stato dell\'utenza')+
+      campo(p,'debitore.statoPiva','Stato della Partita IVA')+
       campo(p,'codice','Codice posizione')+
     '</div></div>'+
 
@@ -1858,8 +1874,7 @@ function htmlDatiCA(p){
       r('Mail:', fmtData(d.data)+' — '+(d.oggetto||''))+
       r('Importo Totale Scaduto:', d.importo!=null?fmtEuro(d.importo):'non indicato')+
       ((d.posizioni||[]).length>1?r('Posizioni:', d.posizioni.map(x=>'n. '+x.n+' '+fmtEuro(x.importo)).join(' · ')):'')+
-      r('Contratti:', (d.contratti||[]).join(' / '))+r('Tipologia utenza:', d.tipologia)+
-      r('Stato utenza:', (d.statiUtenza||[]).join(' · '))+r('Stato della Partita IVA:', d.statoPiva)+
+
       '</div>';
   }
   if(p.cartellaLetta) h+='<div class="desc" style="margin:6px 0 0">Cartella letta il '+new Date(p.cartellaLetta).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'})+
@@ -2722,10 +2737,10 @@ async function elencoCartelle(){
   const out=[];
   for await (const [nome,h] of posHandle.entries()){
     if(h.kind!=='directory') continue;
-    if(/^#.*#$/.test(nome)){ // raggruppamenti: #CON DECRETI EMESSI#, #CONCORSUALE#, #DEFINITI-ARCHIVIATO#…
-      if(/MODELLI/i.test(nome)) continue;
-      for await (const [n2,h2] of h.entries()) if(h2.kind==='directory') out.push({rel:nome+'\\'+n2, nome:n2, categoria:nome, h:h2});
-    } else out.push({rel:nome, nome, categoria:'', h});
+    // solo le posizioni direttamente in POSIZIONI: le cartelle #…# (#CON DECRETI EMESSI#, #CONCORSUALE#,
+    // #DEFINITI-ARCHIVIATO#, #MODELLI#) non vengono lette né proposte come nuove posizioni
+    if(/^#/.test(nome)) continue;
+    out.push({rel:nome, nome, categoria:'', h});
   }
   return out.sort((a,b)=>a.rel.localeCompare(b.rel,'it'));
 }
@@ -2760,8 +2775,9 @@ async function scandisci(dh, pref, out, prof){
   for await (const [nome,h] of dh.entries()){
     if(/^~\$|^\.|^thumbs\.db$|^desktop\.ini$/i.test(nome)) continue;
     const rel=pref?pref+'/'+nome:nome;
-    if(h.kind==='directory'){ if(prof<5) await scandisci(h, rel, out, prof+1); }
-    else { try{ const f=await h.getFile(); out.push({rel, nome, h, f, size:f.size, mod:f.lastModified}); }catch(e){} }
+    if(h.kind==='directory'){ if(prof<5){ try{ await scandisci(h, rel, out, prof+1); }catch(e){ out.push({rel:rel+'/', nome, h, f:null, size:0, mod:0, err:(e&&e.name)||'errore', cartella:true}); } } }
+    else { try{ const f=await h.getFile(); out.push({rel, nome, h, f, size:f.size, mod:f.lastModified}); }
+      catch(e){ out.push({rel, nome, h, f:null, size:0, mod:0, err:(e&&e.name)||'errore'}); } } // es. percorso oltre i 260 caratteri di Windows
   }
   return out;
 }
@@ -2917,7 +2933,8 @@ function datiMailCA(oggetto, corpo){
   if(statoPiva && statoPiva!=='ATTIVA') verifiche.push('Partita IVA indicata come '+statoPiva);
   if(statiUtenza.some(s=>/CESSAT/i.test(s))) verifiche.push('Utenza cessata: '+statiUtenza.filter(s=>/CESSAT/i.test(s)).join('; '));
   if(!pec) verifiche.push('PEC del debitore non indicata nella mail');
-  return {nome, forma:formaDaNome(nome), via, cap, comune, pec, piva, statoPiva, codici, contratti, tipologia, statiUtenza,
+  const forma=formaDaNome(nome) || (/ditta\s+individuale/i.test(t)?'Ditta individuale':'');
+  return {nome, forma, via, cap, comune, pec, piva, statoPiva, codici, contratti, tipologia, statiUtenza,
     importo, posizioni:imp.posizioni, verifiche};
 }
 function eRicevutaFile(nome, oggetto){
@@ -2988,14 +3005,20 @@ async function leggiEstrattoConto(buf){
 
 /* ---------- aggiornamento di una posizione dalla sua cartella ---------- */
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9@]/g,'');
-const CAMPI_ANAG=[['nome','Denominazione'],['forma','Forma giuridica'],['indirizzo','Indirizzo sede'],['cap','CAP'],['sede','Comune'],['piva','P.IVA / C.F.'],['pec','PEC']];
+const CAMPI_ANAG=[['nome','Denominazione'],['forma','Forma giuridica'],['indirizzo','Indirizzo sede'],['cap','CAP'],['sede','Comune'],['piva','P.IVA / C.F.'],['pec','PEC'],
+  ['contratti','Codici contratto'],['tipologia','Tipologia utenza'],['statoUtenza','Stato dell\'utenza'],['statoPiva','Stato della Partita IVA']];
 function allegatoUtile(n){ return !/^image\d*\.(png|jpe?g|gif)$|^(logo|facebook|instagram|linkedin|youtube|shutterstock|icona)[_\w-]*\.(png|jpe?g|gif)$/i.test(n); }
 async function aggiornaPratica(p, c){
   const rep={p, c, fatti:[], nuovi:[], modificati:[], verifiche:[], diff:[], errori:[], primaVolta:!p.cartellaIndice || !Object.keys(p.cartellaIndice).length};
   const percorso=percorsoCartella(c);
   if(p.cartella!==percorso){ rep.fatti.push('Cartella collegata: '+c.rel+(p.cartella?' (prima: '+p.cartella+')':'')); p.cartella=percorso; }
   if(c.categoria) rep.verifiche.push('La cartella è nel raggruppamento '+c.categoria+': controllare fase e stato della posizione');
-  const files=await scandisci(c.h,'',[],0);
+  const tutti=await scandisci(c.h,'',[],0);
+  const files=tutti.filter(x=>!x.err), illeggibili=tutti.filter(x=>x.err);
+  illeggibili.forEach(x=>{ const lung=(percorso+'\\'+x.rel.replace(/\//g,'\\')).length;
+    rep.errori.push(x.rel.replace(/\//g,' › ')+': '+(lung>259
+      ? 'non si può aprire perché il percorso completo è lungo '+lung+' caratteri e Windows ne gestisce al massimo 259. Accorcia il nome del file (es. «Mail CA - Nuova pratica.msg») e premi di nuovo Aggiorna.'
+      : 'non si può aprire ('+x.err+'): forse è aperto in un altro programma o non è ancora scaricato.')); });
   const indice=p.cartellaIndice||{};
   files.forEach(x=>{ if(!(x.rel in indice)) rep.nuovi.push(x); else if(indice[x.rel]!==x.mod) rep.modificati.push(x); });
   const daLeggere=new Set(rep.nuovi.concat(rep.modificati).map(x=>x.rel));
@@ -3029,7 +3052,15 @@ async function aggiornaPratica(p, c){
       }
       rep.ecMail=prima.m.allegati.filter(a=>/\.xlsx$/i.test(a.nome) && RE_EC_NOME.test(a.nome));
     } else if(!prima && !p.datiCA){
-      rep.verifiche.push('Nessuna mail di CA con i dati della pratica in '+SOTTO_MAIL);
+      const bloccata=illeggibili.find(x=>/\.(msg|eml)$/i.test(x.nome) && (inMail(x) || x.rel.indexOf('/')<0) && /nuova\s+pratica|codic[ei]\s+client/i.test(x.nome));
+      if(bloccata){
+        // si usano almeno i codici cliente scritti nel nome del file (Outlook mette «_» al posto di «:» e «/»)
+        const ogg=bloccata.nome.replace(/\.(msg|eml)$/i,'').replace(/(Client[ei])_\s/i,'$1: ').replace(/\s_\s/g,' / ');
+        const cod=[]; let mm; const re=/(?:^|[:\/]\s*)([A-Z]*\d[A-Z0-9]*)\s+-\s/gi; while((mm=re.exec(ogg))) cod.push(mm[1]);
+        const nuovi=cod.filter(k=>String(p.debitore.codici||'').toUpperCase().indexOf(k.toUpperCase())<0);
+        if(nuovi.length){ p.debitore.codici=[p.debitore.codici].concat(nuovi).filter(Boolean).join(' / '); rep.fatti.push('Codici cliente (dal nome del file della mail): '+nuovi.join(' / ')); }
+        rep.verifiche.push('La mail di CA c\'è ma non si può aprire (nome del file troppo lungo): l\'anagrafica verrà compilata dopo aver accorciato il nome del file');
+      } else rep.verifiche.push('Nessuna mail di CA con i dati della pratica in '+SOTTO_MAIL);
     }
   }
   /* 2) estratti conto: per ogni codice cliente il più recente */
@@ -3065,6 +3096,9 @@ async function aggiornaPratica(p, c){
         rep.verifiche.push('IMPORTO TOTALE SCADUTO DA VERIFICARE: la mail di CA indica '+fmtEuro(tot)+', l\'estratto conto al '+fmtData(sit)+' '+fmtEuro(scad));
     }
   }
+  /* 3a) PEC non consegnate: avviso di mancata consegna nuovo */
+  files.filter(x=>inMail(x) && /\.eml$/i.test(x.nome) && /MANCATA\s+CONSEGNA|NON\s+ACCETTAZIONE|ERRORE\s+DI\s+CONSEGNA/i.test(x.nome) && daLeggere.has(x.rel))
+    .forEach(x=>rep.verifiche.push('PEC NON CONSEGNATA: «'+x.nome.replace(/\.eml$/i,'')+'» — verificare l\'indirizzo PEC e reinviare'));
   /* 3) ricevute di consegna PEC nuove: possibile data di invio della messa in mora (la più recente) */
   if(p.fase===1 && !p.fasi.mora.data){
     let ult=null;
@@ -3084,12 +3118,13 @@ async function aggiornaPratica(p, c){
   return rep;
 }
 function applicaDatiMail(p, d, rep){
-  const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec};
+  const val={nome:d.nome, forma:d.forma, indirizzo:d.via, cap:d.cap, sede:d.comune, piva:d.piva, pec:d.pec,
+    contratti:d.contratti.join(' / '), tipologia:d.tipologia, statoUtenza:d.statiUtenza.join(' · '), statoPiva:d.statoPiva};
   CAMPI_ANAG.forEach(([k,lab])=>{ const v=String(val[k]||'').trim(); if(!v) return; const cur=String(p.debitore[k]||'').trim();
     if(!cur){ p.debitore[k]=v; rep.fatti.push(lab+': '+v); }
     else if(norm(cur)!==norm(v)) rep.diff.push({k, lab, ora:cur, mail:v, valore:v}); });
   p.debitore.sedeDivisa=true;
-  const nuovi=d.codici.filter(c=>codiciPosizione(p).toUpperCase().indexOf(c.toUpperCase())<0);
+  const nuovi=d.codici.filter(c=>String(p.debitore.codici||'').toUpperCase().indexOf(c.toUpperCase())<0);
   if(nuovi.length){ p.debitore.codici=[p.debitore.codici].concat(nuovi).filter(Boolean).join(' / '); rep.fatti.push('Codici cliente: '+nuovi.join(' / ')); }
   if(d.importo!=null && !p.fatture.length){
     if(p.importo===''||p.importo==null){ p.importo=d.importo; rep.fatti.push('Importo totale scaduto: '+fmtEuro(d.importo)); }
@@ -3108,8 +3143,9 @@ async function aggiornaCartelle(soloId){
   const usate=new Map(); // rel -> id posizione
   db.posizioni.forEach(p=>{ const r=relDaPercorso(p.cartella); if(r) usate.set(r, p.id); });
   const lista=soloId ? db.posizioni.filter(p=>p.id===soloId) : db.posizioni.filter(p=>p.codice!=='CA-ES000');
-  const esito={risultati:[], senza:[], nuove:[], cartelle, solo:soloId||null};
+  const esito={risultati:[], senza:[], nuove:[], cartelle, solo:soloId||null, saltate:0};
   for(const p of lista){
+    if(/^#/.test(relDaPercorso(p.cartella))){ esito.saltate++; continue; } // cartella in #CON DECRETI EMESSI#, #CONCORSUALE#…: non si legge
     const ab=cartellaDi(p, cartelle, usate);
     if(!ab){ esito.senza.push(p); continue; }
     usate.set(ab.c.rel, p.id);
@@ -3155,6 +3191,7 @@ function renderEsitoCartelle(){
   }
   if(!h) h='<div class="okbox">✓ Nessuna novità nelle cartelle'+(e.risultati.length?' ('+e.risultati.length+(e.risultati.length===1?' posizione controllata)':' posizioni controllate)'):'')+'.</div>';
   else if(senzaNovita) h+='<div class="desc">Altre '+senzaNovita+' posizioni controllate: nessuna novità.</div>';
+  if(e.saltate) h+='<div class="desc">'+e.saltate+(e.saltate===1?' posizione ha':' posizioni hanno')+' la cartella in un raggruppamento #…# (decreti emessi, concorsuale, archiviato): non '+(e.saltate===1?'è stata letta':'sono state lette')+'.</div>';
   const azioni=e.risultati.some(r=>r.diff.length) || e.senza.length || e.nuove.length;
   $('#modal').innerHTML='<div class="box ag-box"><div class="mh"><h2>🔄 Aggiorna dalle cartelle</h2><button class="p-close" data-act="chiudiModal">✕</button></div>'+
     '<div class="mb">'+h+'</div><div class="mf"><button class="btn-out" data-act="chiudiModal">Chiudi</button>'+
