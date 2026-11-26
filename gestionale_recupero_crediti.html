@@ -2385,16 +2385,20 @@ async function idbModello(op, v){ const d=await idb(); return new Promise((res,r
   const st=t.objectStore('modelli'); op==='del'?st.delete(v):st.put(v); t.oncomplete=()=>res(true); t.onerror=()=>rej(t.error); }); }
 async function leggiModelliIdb(){ if(modelli) return; try{ modelli=await idbTutti(); }catch(e){ modelli=[]; } }
 /* modello predefinito della lettera di messa in mora: quello della skill pratica-recupero-crediti
-   (L:\\PROGETTI\\COMOACQUA\\.claude\\skills\\pratica-recupero-crediti\\template). Nella versione online è pubblicato
-   accanto alla pagina; sul PC si legge dalla cartella #MODELLI# dove ne è stata messa una copia. */
+   (L:\\PROGETTI\\COMOACQUA\\.claude\\skills\\pratica-recupero-crediti\\template). Nella versione online è incorporato
+   nella pagina (#modelloPredefinito); sul PC si legge dalla cartella #MODELLI# dove ne è stata messa una copia. */
 const MODELLO_PREDEFINITO={fileName:'modello_messa_in_mora.docx', url:'modelli/modello_messa_in_mora.docx', nome:'Messa in mora — modello della skill'};
 function ePredefinito(m){ return m && m.fileName===MODELLO_PREDEFINITO.fileName; }
 async function caricaPredefinito(){
   if(modelli.some(ePredefinito)) return;            // già presente (anche se eliminato dall'utente: resta nascosto)
-  if(location.protocol==='file:') return;          // sul PC arriva dalla cartella #MODELLI#
   try{
-    const r=await fetch(MODELLO_PREDEFINITO.url); if(!r.ok) return;
-    const buf=await r.arrayBuffer(); zipLeggi(buf);
+    let buf;
+    const inc=document.getElementById('modelloPredefinito');   // versione online: modello incorporato nella pagina (base64)
+    if(inc && inc.textContent.trim()){ const bin=atob(inc.textContent.trim()); buf=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i); buf=buf.buffer; }
+    else{ if(location.protocol==='file:') return;  // sul PC arriva dalla cartella #MODELLI#
+      const r=await fetch(MODELLO_PREDEFINITO.url); if(!r.ok) return; buf=await r.arrayBuffer(); }
+    zipLeggi(buf);
     const rec={id:uid(), nome:MODELLO_PREDEFINITO.nome, tipo:'mora', fileName:MODELLO_PREDEFINITO.fileName, size:buf.byteLength,
       lastModified:0, aggiunto:oggi(), origine:'predefinito', nascosto:false, buf};
     modelli.push(rec); await idbModello('put', rec);
