@@ -391,7 +391,7 @@ tbody td:first-child .bold{white-space:nowrap}
     <div class="logo">CA</div>
     <div>
       <h1>Gestionale Recupero Crediti</h1>
-      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.6.1</div>
+      <div class="sub">Studio Legale · Cliente: <b>CA — Como Acqua s.r.l.</b> · v1.6.2</div>
     </div>
   </div>
   <div class="actions">
@@ -646,8 +646,9 @@ const BASE_POS_KEY='gestionale_ca_base_posizioni';
 const BASE_POS_DEFAULT='R:\\Como Acqua\\POSIZIONI';
 const SOTTO_MAIL='0-CORRISPONDENZA', SOTTO_EC='3-ESTRATTO CONTO';
 const RE_EC_NOME=/estratto|(?:^|[^A-Za-z])E\.?C\.?(?=[_\s.-])/i;
-const MSG_SOLO_PC='Le cartelle del computer si collegano solo dalla versione del gestionale sul PC: '+
-  'apri il file gestionale_recupero_crediti.html con Chrome o Edge.';
+const MSG_SOLO_PC='«Aggiorna dalle cartelle» funziona solo nella versione del gestionale sul PC, perché questa pagina online non può leggere le cartelle del computer.\n\n'+
+  'Apri con Chrome o Edge il file:\nL:\\PROGETTI\\COMOACQUA\\GESTIONALE\\gestionale_recupero_crediti.html\n\n'+
+  'Il pulsante è nella barra sopra il registro, accanto a «📝 Genera rapporto».';
 const ATTESE=[['','—'],['ca','in attesa da CA'],['sb','in attesa da SB'],['deposito','in attesa esito deposito'],['notifica','in attesa esito notifica']];
 let posHandle=null;      // cartella POSIZIONI
 let esitoCartelle=null;  // ultimo resoconto di «Aggiorna»
@@ -1508,7 +1509,9 @@ function mailById(id){ return posta.mail.find(m=>m.id===id); }
   }
   try{ dirHandle=IN_ARTEFATTO ? null : await idbGet('dir'); }catch(e){ dirHandle=null; }
   try{ posHandle=IN_ARTEFATTO ? null : await idbGet('posizioni'); }catch(e){ posHandle=null; }
-  if(IN_ARTEFATTO) document.querySelectorAll('#menu [data-act="collegaPosizioni"],#menu [data-act="percorsoPosizioni"],.toolbar [data-act="aggiornaCartelle"]').forEach(b=>b.remove());
+  // versione online: il pulsante resta visibile e spiega dove usarlo (prima veniva nascosto e non si trovava)
+  if(IN_ARTEFATTO){ document.querySelectorAll('#menu [data-act="percorsoPosizioni"]').forEach(b=>b.remove());
+    document.querySelectorAll('.toolbar [data-act="aggiornaCartelle"]').forEach(b=>{ b.title='Funziona solo nella versione sul PC'; b.style.opacity='.75'; }); }
   if(dirHandle){
     const perm=await permesso();
     if(perm==='granted'){ await sincronizza(); }
@@ -1865,7 +1868,7 @@ function renderDetail(){
       campo(p,'cartella','Cartella pratica (percorso)')+
     '</div>'+htmlDatiCA(p)+
     '<div class="add-ev" style="margin-top:8px">'+
-      (IN_ARTEFATTO?'':'<button class="btn-ind" data-act="aggiornaPratica" title="Legge la cartella della pratica: mail di CA, estratto conto, documenti nuovi">🔄 Aggiorna dalla cartella</button>')+
+      '<button class="btn-ind" data-act="aggiornaPratica" title="'+(IN_ARTEFATTO?'Funziona solo nella versione sul PC':'Legge la cartella della pratica: mail di CA, estratto conto, documenti nuovi')+'"'+(IN_ARTEFATTO?' style="opacity:.75"':'')+'>🔄 Aggiorna dalla cartella</button>'+
       '<button class="btn-dark" data-act="apriCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📂 Apri cartella</button>'+
       '<button class="btn-dark" data-act="copiaCartella" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📋 Copia percorso</button>'+
       '<button class="btn-dark" data-act="rapporto" data-id="'+p.id+'" style="background:#fff;color:var(--indigo);border:1px solid var(--indigo)">📝 Rapporto</button>'+
